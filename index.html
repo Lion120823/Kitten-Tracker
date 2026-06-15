@@ -482,7 +482,7 @@
         litters.forEach(litter => {
             let dob = new Date(litter.dob);
             let dewormDate = new Date(dob);
-            dewormDate.setDate(dewormDate.getDate() + 21);
+            dewormDate.setDate(dewormDate.getDate() + 28);
             
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -498,8 +498,8 @@
 
             remindersDiv.innerHTML += `
                 <div class="reminder-card">
-                    <strong>🐛 Deworming: ${litter.name} Kittens</strong>
-                    Day 14 is on ${dewormDate.toDateString()} (${statusStr}).
+                    <strong>🐛 Deworming 2nd round: ${litter.name} Kittens</strong>
+                    Day 21 is on ${dewormDate.toDateString()} (${statusStr}).
                 </div>
             `;
         });
