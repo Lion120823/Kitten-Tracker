@@ -491,39 +491,41 @@
     }
 
     // --- Dashboard & Insights ---
-    function loadDashboard() {
-        const remindersDiv = document.getElementById('reminders-container');
-        remindersDiv.innerHTML = '';
+  function loadDashboard() {
+    const remindersDiv = document.getElementById('reminders-container');
+    remindersDiv.innerHTML = '';
+    
+    kittens.forEach(k => {
+        if (!k.dob) return;
         
-        const litters = [
-            { name: "Porchetta's", dob: "2026-05-25" },
-            { name: "Sassy's", dob: "2026-06-01" }
-        ];
-
-        litters.forEach(litter => {
-            let dob = new Date(litter.dob);
-            let dewormDate = new Date(dob);
-            dewormDate.setDate(dewormDate.getDate() + 14);
+        let dob = new Date(k.dob);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        // Milestones: 3, 5, 7, and 9 weeks
+        const milestones = [3, 5, 7, 9];
+        
+        milestones.forEach(week => {
+            let milestoneDate = new Date(dob);
+            milestoneDate.setDate(milestoneDate.getDate() + (week * 7));
+            milestoneDate.setHours(0,0,0,0);
             
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            dewormDate.setHours(0,0,0,0);
-
-            const timeDiff = dewormDate.getTime() - today.getTime();
-            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-            let statusStr = "";
-            if(daysLeft > 0) statusStr = `in ${daysLeft} days`;
-            else if (daysLeft === 0) statusStr = `TODAY!`;
-            else statusStr = `${Math.abs(daysLeft)} days ago`;
-
-            remindersDiv.innerHTML += `
-                <div class="reminder-card">
-                    <strong>🐛 Deworming: ${litter.name} Kittens</strong>
-                    Day 14 is on ${dewormDate.toDateString()} (${statusStr}).
-                </div>
-            `;
+            const timeDiff = milestoneDate.getTime() - today.getTime();
+            const daysFromToday = Math.round(timeDiff / (1000 * 3600 * 24));
+            
+            // Show if it's in the next 14 days or was within the last 3 days
+            if (daysFromToday >= -3 && daysFromToday <= 14) { 
+                let status = daysFromToday < 0 ? 'OVERDUE' : (daysFromToday === 0 ? 'TODAY!' : `in ${daysFromToday} days`);
+                remindersDiv.innerHTML += `
+                    <div class="reminder-card">
+                        <strong>🐛 Deworming: ${k.name} (${week} weeks old)</strong>
+                        Due: ${milestoneDate.toDateString()} (${status})
+                    </div>
+                `;
+            }
         });
+    });
+}
         
         loadInsights(true); // Loads top gainer into dashboard
     }
