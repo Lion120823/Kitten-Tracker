@@ -129,12 +129,28 @@
         const container = document.getElementById('reminders-container');
         container.innerHTML = '';
         const today = new Date(); today.setHours(0,0,0,0);
+        
+        const groups = {};
         kittens.forEach(k => {
             if(!k.dob) return;
+            if(!groups[k.dob]) groups[k.dob] = [];
+            groups[k.dob].push(k.name);
+        });
+
+        Object.keys(groups).forEach(dob => {
+            const names = groups[dob].join(', ');
             [3, 5, 7, 9].forEach(w => {
-                let d = new Date(k.dob); d.setDate(d.getDate() + (w * 7));
+                let d = new Date(dob); d.setDate(d.getDate() + (w * 7));
                 let diff = Math.round((d - today) / 86400000);
-                if (diff >= -3 && diff <= 14) container.innerHTML += `<div class="reminder-card"><strong>🐛 ${k.name} (${w}w)</strong> Due: ${d.toDateString()} (${diff < 0 ? 'OVERDUE' : diff + ' days'})</div>`;
+                if (diff >= -3 && diff <= 14) {
+                    container.innerHTML += `
+                        <div class="reminder-card">
+                            <strong>🐛 Deworming: ${w} Weeks Old</strong>
+                            <p style="margin-bottom:5px;">For: ${names}</p>
+                            Due: ${d.toDateString()} (${diff < 0 ? 'OVERDUE' : diff === 0 ? 'TODAY!' : 'in ' + diff + ' days'})
+                        </div>
+                    `;
+                }
             });
         });
     }
