@@ -77,9 +77,13 @@
         </div>
 
         <div id="settings" class="section">
-            <div id="kitten-edit-list"></div>
-            <button class="btn-submit" onclick="saveKittenNames()">Save Names</button>
-        </div>
+    <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Kittens 🐱</h3>
+    <div id="kitten-edit-list"></div>
+    <button class="btn-submit" style="margin-top: 15px;" onclick="saveKittenNames()">Save Changes</button>
+    
+    <button class="btn-submit" style="margin-top: 15px; background: #ff6b6b;" onclick="resetAppData()">Clear All Data</button>
+    <div id="settings-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Updated!</div>
+</div>
     </div>
 </div>
 
