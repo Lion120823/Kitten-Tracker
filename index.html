@@ -6,34 +6,24 @@
     <title>🐾 Purr-fect Kitten Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
-        :root { --primary: #ffb6c1; --secondary: #a2d2ff; --background: #fff0f5; --card-bg: #ffffff; --text: #5c4d5c; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
+        :root { --primary: #ffb6c1; --secondary: #a2d2ff; --background: #fff0f5; --text: #5c4d5c; }
+        * { box-sizing: border-box; font-family: 'Quicksand', sans-serif; }
         body { background-color: var(--background); color: var(--text); padding: 20px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; min-height: 85vh; }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 1.5em; font-weight: 700; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
-        .nav { display: flex; justify-content: space-around; background: #fff; padding: 15px 5px; border-bottom: 2px solid var(--background); flex-wrap: wrap; }
-        .nav button { background: none; border: none; font-size: 0.95em; font-weight: 600; color: #b0a0b0; cursor: pointer; padding: 5px 8px; border-radius: 15px; transition: all 0.3s; }
-        .nav button.active { color: white; background: var(--secondary); }
+        .app-container { width: 100%; max-width: 600px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; min-height: 85vh; display: flex; flex-direction: column; }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-weight: 700; font-size: 1.5em; }
+        .nav { display: flex; justify-content: space-around; background: #fff; padding: 10px; border-bottom: 2px solid var(--background); }
+        .nav button { background: none; border: none; font-weight: 600; color: #b0a0b0; cursor: pointer; padding: 5px; }
+        .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .content { padding: 20px; flex-grow: 1; overflow-y: auto; }
         .section { display: none; }
         .section.active { display: block; }
-        .reminder-card { background: #fff9e6; border-left: 5px solid #ffcc00; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9em; }
-        .reminder-card strong { display: block; margin-bottom: 5px; color: #d4a000; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
-        input, select { width: 100%; padding: 12px; border: 2px solid var(--background); border-radius: 10px; }
-        .btn-submit { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
-        .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
-        .history-table th { background: var(--background); color: var(--secondary); padding: 10px; text-align: left; }
-        .history-table td { padding: 10px; border-bottom: 1px solid #eee; }
-        .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 25px; }
-        .kitten-edit { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .reminder-card { background: #fff9e6; border-left: 5px solid #ffcc00; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-size: 0.9em; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
-
 <div class="app-container">
     <div class="header">🐾 Kitten Tracker</div>
     <div class="nav">
@@ -42,36 +32,29 @@
         <button onclick="switchTab('history', this)">History</button>
         <button onclick="switchTab('settings', this)">Settings</button>
     </div>
-
     <div class="content">
-        <div id="dashboard" class="section active">
-            <h3 style="margin-bottom: 15px; color: var(--primary);">Health Reminders 🍼</h3>
-            <div id="reminders-container"></div>
-        </div>
+        <div id="dashboard" class="section active"><div id="reminders-container"></div></div>
         <div id="weighin" class="section">
-            <h3 style="margin-bottom: 20px; color: var(--primary);">New Weigh-In ⚖️</h3>
-            <select id="kitten-select" class="form-group"></select>
-            <input type="date" id="weigh-date" class="form-group">
-            <input type="number" id="weight-input" placeholder="Weight (g)" class="form-group">
-            <button class="btn-submit" onclick="saveWeight()">Save Weight</button>
+            <select id="kitten-select"></select>
+            <input type="date" id="weigh-date">
+            <input type="number" id="weight-input" placeholder="Weight (g)">
+            <button class="btn" onclick="saveWeight()">Save Weight</button>
         </div>
         <div id="history" class="section">
-            <div class="chart-container"><canvas id="growthChart"></canvas></div>
-            <table class="history-table"><thead><tr><th>Date</th><th>Kitten</th><th>Weight</th></tr></thead><tbody id="history-table-body"></tbody></table>
+            <div style="height: 250px;"><canvas id="growthChart"></canvas></div>
+            <table style="width:100%; font-size: 0.8em;" id="history-table"><thead><tr><th>Date</th><th>Kitten</th><th>Weight</th></tr></thead><tbody id="history-table-body"></tbody></table>
         </div>
         <div id="settings" class="section">
-            <h3 style="margin-bottom: 15px; color: var(--primary);">Add New Kitten 🆕</h3>
-            <div class="form-group">
-                <input type="text" id="new-name" placeholder="Kitten Name" class="form-group">
-                <input type="text" id="new-mother" placeholder="Mother (Litter Name)" class="form-group">
-                <input type="date" id="new-dob" class="form-group">
-                <button class="btn-submit" style="background:var(--secondary);" onclick="addKitten()">Add Kitten</button>
-            </div>
-            <hr style="margin: 20px 0;">
-            <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Existing 🐱</h3>
+            <h3>Add New Kitten</h3>
+            <input type="text" id="new-name" placeholder="Name">
+            <input type="text" id="new-mother" placeholder="Mother">
+            <input type="date" id="new-dob">
+            <button class="btn" style="background:var(--secondary)" onclick="addKitten()">Add Kitten</button>
+            <hr style="margin:20px 0;">
+            <h3>Manage Existing</h3>
             <div id="kitten-edit-list"></div>
-            <button class="btn-submit" onclick="saveKittenNames()">Save All Changes</button>
-            <button class="btn-submit" style="margin-top: 15px; background: #ff6b6b;" onclick="resetAppData()">Clear All Data</button>
+            <button class="btn" onclick="saveKittenNames()">Save Changes</button>
+            <button class="btn" style="background:#ff6b6b" onclick="resetAppData()">Clear All Data</button>
         </div>
     </div>
 </div>
@@ -79,103 +62,103 @@
 <script>
     let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || [
         { id: 'p_gray', name: 'Gray Collar', mother: 'Porchetta', dob: '2026-05-25' },
-        { id: 'p_red', name: 'Red Collar', mother: 'Porchetta', dob: '2026-05-25' },
-        { id: 'p_violet', name: 'Violet Collar', mother: 'Porchetta', dob: '2026-05-25' },
-        { id: 'p_pink', name: 'Pink Collar', mother: 'Porchetta', dob: '2026-05-25' },
-        { id: 's_black', name: 'Black Collar', mother: 'Sassy', dob: '2026-06-01' },
-        { id: 's_white', name: 'White Collar', mother: 'Sassy', dob: '2026-06-01' }
+        { id: 's_black', name: 'Black Collar', mother: 'Sassy', dob: '2026-06-01' }
     ];
+    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || [];
+    let dewormingDone = JSON.parse(localStorage.getItem('kt_deworming_done')) || [];
 
-    const initialWeights = [
-        { kittenId: 'p_gray', date: '2026-05-25', weight: 100 }, { kittenId: 'p_red', date: '2026-05-25', weight: 87 },
-        { kittenId: 'p_violet', date: '2026-05-25', weight: 98 }, { kittenId: 'p_pink', date: '2026-05-25', weight: 74 },
-        { kittenId: 'p_gray', date: '2026-05-26', weight: 114 }, { kittenId: 'p_red', date: '2026-05-26', weight: 94 },
-        { kittenId: 'p_violet', date: '2026-05-26', weight: 108 }, { kittenId: 'p_pink', date: '2026-05-26', weight: 84 },
-        { kittenId: 'p_gray', date: '2026-05-28', weight: 128 }, { kittenId: 'p_red', date: '2026-05-28', weight: 111 },
-        { kittenId: 'p_violet', date: '2026-05-28', weight: 121 }, { kittenId: 'p_pink', date: '2026-05-28', weight: 97 },
-        { kittenId: 'p_gray', date: '2026-05-30', weight: 137 }, { kittenId: 'p_red', date: '2026-05-30', weight: 123 },
-        { kittenId: 'p_violet', date: '2026-05-30', weight: 135 }, { kittenId: 'p_pink', date: '2026-05-30', weight: 113 },
-        { kittenId: 's_black', date: '2026-06-01', weight: 93 }, { kittenId: 's_white', date: '2026-06-01', weight: 84 },
-        { kittenId: 'p_gray', date: '2026-06-01', weight: 158 }, { kittenId: 'p_red', date: '2026-06-01', weight: 138 },
-        { kittenId: 'p_violet', date: '2026-06-01', weight: 143 }, { kittenId: 'p_pink', date: '2026-06-01', weight: 123 },
-        { kittenId: 'p_gray', date: '2026-06-04', weight: 172 }, { kittenId: 'p_red', date: '2026-06-04', weight: 157 },
-        { kittenId: 'p_violet', date: '2026-06-04', weight: 154 }, { kittenId: 'p_pink', date: '2026-06-04', weight: 137 },
-        { kittenId: 's_black', date: '2026-06-04', weight: 128 }, { kittenId: 's_white', date: '2026-06-04', weight: 121 }
-    ];
-
-    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || initialWeights;
-    let myChart = null;
-
-    function switchTab(tabId, btn) {
+    function switchTab(tab, btn) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tab).classList.add('active');
         btn.classList.add('active');
-        if(tabId === 'dashboard') loadDashboard();
-        if(tabId === 'history') { loadHistoryTable(); renderChart(); }
+        if(tab === 'dashboard') loadDashboard();
+        if(tab === 'history') { renderChart(); loadHistoryTable(); }
+        if(tab === 'settings') populateSettings();
+        if(tab === 'weighin') populateDropdown();
     }
+
+    function loadDashboard() {
+        const container = document.getElementById('reminders-container');
+        container.innerHTML = '<h3>Upcoming Deworming 🍼</h3>';
+        const litters = [...new Set(kittens.map(k => k.mother))];
+        litters.forEach(mother => {
+            const litterKittens = kittens.filter(k => k.mother === mother);
+            if(litterKittens.length === 0 || !litterKittens[0].dob) return;
+            const dob = new Date(litterKittens[0].dob);
+            let found = false;
+            [3, 5, 7, 9].forEach(w => {
+                if(found) return;
+                let key = `${mother}-${w}`;
+                if(!dewormingDone.includes(key)) {
+                    let d = new Date(dob); d.setDate(d.getDate() + (w * 7));
+                    container.innerHTML += `<div class="reminder-card"><strong>🐛 ${mother}'s Litter: ${w} Weeks</strong><br>Due: ${d.toDateString()}<br><button class="btn" onclick="markDone('${key}')">Mark as Done</button></div>`;
+                    found = true;
+                }
+            });
+        });
+        container.innerHTML += '<h3>Top Gainers 📈</h3>';
+        kittens.map(k => {
+            const kW = weights.filter(w => w.kittenId === k.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+            return { name: k.name, diff: kW.length >= 2 ? kW[0].weight - kW[1].weight : 0 };
+        }).sort((a, b) => b.diff - a.diff).slice(0, 3).forEach(g => {
+            container.innerHTML += `<div class="reminder-card"><strong>${g.name}</strong>: +${g.diff}g</div>`;
+        });
+    }
+
+    function markDone(key) { dewormingDone.push(key); localStorage.setItem('kt_deworming_done', JSON.stringify(dewormingDone)); loadDashboard(); }
 
     function addKitten() {
         const name = document.getElementById('new-name').value;
         const mother = document.getElementById('new-mother').value;
         const dob = document.getElementById('new-dob').value;
-        if(!name || !mother || !dob) return alert("Please fill in all fields.");
-        
-        kittens.push({ id: 'k_' + Date.now(), name, mother, dob });
+        if(!name) return alert("Enter a name");
+        kittens.push({ id: 'k_'+Date.now(), name, mother, dob });
         localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
-        alert("Kitten added!");
-        location.reload();
-    }
-
-    function populateDropdown() {
-        document.getElementById('kitten-select').innerHTML = kittens.map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+        alert("Added!"); populateSettings();
     }
 
     function populateSettings() {
         document.getElementById('kitten-edit-list').innerHTML = kittens.map(k => `
-            <div class="kitten-edit">
-                <label>Name</label><input type="text" id="edit-name-${k.id}" value="${k.name}">
-                <label>Mother</label><input type="text" id="edit-mother-${k.id}" value="${k.mother || ''}">
-                <label>DOB</label><input type="date" id="edit-dob-${k.id}" value="${k.dob || ''}">
+            <div style="margin-bottom:10px; padding:10px; border:1px solid #eee;">
+                <label>Name</label><input type="text" value="${k.name}" id="name-${k.id}">
+                <label>DOB</label><input type="date" value="${k.dob||''}" id="dob-${k.id}">
             </div>
         `).join('');
     }
 
-    async function saveWeight() {
+    function saveKittenNames() {
+        kittens.forEach(k => { k.name = document.getElementById(`name-${k.id}`).value; k.dob = document.getElementById(`dob-${k.id}`).value; });
+        localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
+        alert("Saved!"); loadDashboard();
+    }
+
+    function saveWeight() {
         const kId = document.getElementById('kitten-select').value;
         const date = document.getElementById('weigh-date').value;
         const weight = parseFloat(document.getElementById('weight-input').value);
         if(!date || isNaN(weight)) return alert('Enter data');
-        
-        weights.push({ kittenId: kId, date, weight, id: Date.now() });
+        weights.push({ kittenId: kId, date, weight });
         localStorage.setItem('kt_weights_v3', JSON.stringify(weights));
-        
-        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyfzrJe2swPRpwEpgLn2B7zYLuZR4INZE2QGIqERMXhr-Ao8vGQpiMA5h0vRuBvtV2C/exec";
-        fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({date, kitten: kId, weight, type: 'weight'}) });
-        alert('Saved!');
-        loadHistoryTable();
+        alert('Saved!'); loadHistoryTable();
     }
 
-    function loadDashboard() {
-        const container = document.getElementById('reminders-container');
-        container.innerHTML = '';
-        const today = new Date(); today.setHours(0,0,0,0);
-        
-        const groups = {};
-        kittens.forEach(k => {
-            if(!k.dob) return;
-            if(!groups[k.dob]) groups[k.dob] = [];
-            groups[k.dob].push(k.name);
-        });
+    function renderChart() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        const dates = [...new Set(weights.map(w => w.date))].sort();
+        if(window.myChart) window.myChart.destroy();
+        window.myChart = new Chart(ctx, { type: 'line', data: { labels: dates, datasets: kittens.map(k => ({ label: k.name, data: dates.map(d => weights.find(w => w.kittenId === k.id && w.date === d)?.weight || null) })) } });
+    }
 
-        Object.keys(groups).forEach(dob => {
-            const names = groups[dob].join(', ');
-            [3, 5, 7, 9].forEach(w => {
-                let d = new Date(dob); d.setDate(d.getDate() + (w * 7));
-                let diff = Math.round((d - today) / 86400000);
-                if (diff >= -3 && diff <= 14) {
-                    container.innerHTML += `
-                        <div class="reminder-card">
-                            <strong>🐛 Deworming: ${w} Weeks Old</strong>
-                            <p style="margin-bottom:5px;">For: ${names}</p>
-                            Due: ${d.toDateString()}
+    function loadHistoryTable() {
+        document.getElementById('history-table-body').innerHTML = weights.sort((a,b) => new Date(b.date) - new Date(a.date)).map(w => `<tr><td>${w.date}</td><td>${kittens.find(k=>k.id===w.kittenId)?.name}</td><td>${w.weight}g</td></tr>`).join('');
+    }
+
+    function populateDropdown() { document.getElementById('kitten-select').innerHTML = kittens.map(k => `<option value="${k.id}">${k.name}</option>`).join(''); }
+    function resetAppData() { if(confirm("Delete all?")) { localStorage.clear(); location.reload(); } }
+    
+    document.getElementById('weigh-date').valueAsDate = new Date();
+    loadDashboard();
+</script>
+</body>
+</html>
