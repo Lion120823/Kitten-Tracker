@@ -5,131 +5,663 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🐾 Purr-fect Kitten Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        :root { --primary: #ffb6c1; --secondary: #a2d2ff; --background: #fff0f5; --card-bg: #ffffff; --text: #5c4d5c; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
-        body { background-color: var(--background); color: var(--text); padding: 20px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; min-height: 85vh; }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 1.5em; font-weight: 700; }
-        .nav { display: flex; justify-content: space-around; background: #fff; padding: 15px 5px; border-bottom: 2px solid var(--background); }
-        .nav button { background: none; border: none; font-size: 0.9em; font-weight: 600; color: #b0a0b0; cursor: pointer; padding: 5px 8px; border-radius: 15px; }
-        .nav button.active { color: white; background: var(--secondary); }
-        .content { padding: 20px; flex-grow: 1; overflow-y: auto; }
-        .section { display: none; }
-        .section.active { display: block; }
-        .btn-submit { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-        .kitten-profile-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: #eee; margin-right: 15px; }
+        :root {
+            --primary: #ffb6c1; 
+            --secondary: #a2d2ff; 
+            --background: #fff0f5; 
+            --card-bg: #ffffff;
+            --text: #5c4d5c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px; /* Slightly wider for the chart */
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 85vh;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            background: #fff;
+            padding: 15px 5px;
+            border-bottom: 2px solid var(--background);
+            flex-wrap: wrap; /* Allows wrapping on very small screens */
+        }
+
+        .nav button {
+            background: none;
+            border: none;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #b0a0b0;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .nav button.active {
+            color: white;
+            background: var(--secondary);
+        }
+
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Forms & Cards */
+        .reminder-card {
+            background: #fff9e6;
+            border-left: 5px solid #ffcc00;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .reminder-card strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #d4a000;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--background);
+            border-radius: 10px;
+            font-size: 1em;
+            outline: none;
+            transition: border 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--secondary); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4);
+            transition: transform 0.2s;
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* History Table */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .history-table th {
+            background: var(--background);
+            color: var(--secondary);
+            padding: 10px;
+            text-align: left;
+            border-radius: 5px;
+        }
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        /* Settings */
+        .kitten-edit {
+            display: flex; gap: 10px; margin-bottom: 10px; align-items: center;
+        }
+        .kitten-edit input { flex-grow: 1; }
+        .litter-badge {
+            padding: 8px 12px; background: #eee; border-radius: 10px;
+            font-size: 0.8em; min-width: 90px; text-align: center; font-weight: 600;
+        }
+        .badge-porchetta { background: #ffe4e1; color: #d87093; }
+        .badge-sassy { background: #e6e6fa; color: #9370db; }
+        
+        .insight-card {
+            background: var(--background);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .insight-title {
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            border-bottom: 2px solid white;
+            padding-bottom: 5px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <div class="header">🐾 Kitten Tracker</div>
+    
     <div class="nav">
         <button class="active" onclick="switchTab('dashboard')">Home</button>
         <button onclick="switchTab('weighin')">Weigh In</button>
+        <button onclick="switchTab('history')">History & Chart</button>
+        <button onclick="switchTab('insights')">Insights</button>
         <button onclick="switchTab('settings')">Settings</button>
     </div>
 
     <div class="content">
         <div id="dashboard" class="section active">
-            <h3>Kittens</h3>
-            <div id="kitten-list-display"></div>
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Health Reminders 🍼</h3>
+            <div id="reminders-container"></div>
+            
+            <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--secondary);">Top Gainers This Week</h3>
+            <div class="insight-card">
+                <div id="weekly-gainers-dash"></div>
+            </div>
         </div>
 
         <div id="weighin" class="section">
-            <h3 style="margin-bottom: 15px;">New Weigh-In</h3>
-            <select id="kitten-select" style="width:100%; padding:10px; margin-bottom:10px;"></select>
-            <input type="date" id="weigh-date" style="width:100%; padding:10px; margin-bottom:10px;">
-            <input type="number" id="weight-input" placeholder="Weight (g)" style="width:100%; padding:10px; margin-bottom:10px;">
-            <button class="btn-submit" onclick="handleSaveWeight()">Save to Cloud</button>
+            <h3 style="margin-bottom: 20px; color: var(--primary);">New Weigh-In ⚖️</h3>
+            <div class="form-group">
+                <label>Select Kitten</label>
+                <select id="kitten-select"></select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="weigh-date">
+            </div>
+            <div class="form-group">
+                <label>Weight (g)</label>
+                <input type="number" id="weight-input" placeholder="e.g., 150">
+            </div>
+            <button class="btn-submit" onclick="saveWeight()">Save Weight</button>
+            <div id="save-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Saved successfully!</div>
+        </div>
+
+        <div id="history" class="section">
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Growth Chart 📈</h3>
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+            </div>
+            
+            <h3 style="margin-bottom: 10px; color: var(--secondary);">Weigh-In Log</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Kitten</th>
+                        <th>Weight (g)</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="insights" class="section">
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Growth Insights 📊</h3>
+            <div class="insight-card">
+                <div class="insight-title">Total Growth % (Since Day 1)</div>
+                <div id="total-growth"></div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">🏆 Top Gainers by Week</div>
+                <div id="weekly-gainers"></div>
+            </div>
         </div>
 
         <div id="settings" class="section">
-            <h3>Manage Kittens</h3>
-            <div id="settings-ui"></div>
-            <button class="btn-submit" onclick="saveLocalSettings()">Save Local Data</button>
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Kittens 🐱</h3>
+            <p style="font-size: 0.85em; margin-bottom: 15px; color: gray;">Update names as their personalities develop!</p>
+            <div id="kitten-edit-list"></div>
+            <button class="btn-submit" style="margin-top: 15px;" onclick="saveKittenNames()">Save Names</button>
+            <div id="settings-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Names updated!</div>
         </div>
     </div>
 </div>
 
 <script>
-    const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyfzrJe2swPRpwEpgLn2B7zYLuZR4INZE2QGIqERMXhr-Ao8vGQpiMA5h0vRuBvtV2C/exec";
-
-    let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || [
-        { id: 'p_gray', name: 'Gray Collar', img: '' },
-        { id: 's_black', name: 'Black Collar', img: '' }
+    // --- Data Initialization with Pre-loaded Spreadsheet Data ---
+    const defaultKittens = [
+        { id: 'p_gray', name: 'Gray Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#808080' },
+        { id: 'p_red', name: 'Red Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ff4d4d' },
+        { id: 'p_violet', name: 'Violet Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#da70d6' },
+        { id: 'p_pink', name: 'Pink Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ffb6c1' },
+        { id: 's_black', name: 'Black Collar', litter: 'Sassy', dob: '2026-06-01', color: '#333333' },
+        { id: 's_white', name: 'White Collar', litter: 'Sassy', dob: '2026-06-01', color: '#d3d3d3' }
     ];
 
+    // Pre-load data from your spreadsheet image
+    const preloadedWeights = [
+        // May 25
+        { kittenId: 'p_gray', date: '2026-05-25', weight: 100, id: 1 },
+        { kittenId: 'p_red', date: '2026-05-25', weight: 87, id: 2 },
+        { kittenId: 'p_violet', date: '2026-05-25', weight: 98, id: 3 },
+        { kittenId: 'p_pink', date: '2026-05-25', weight: 74, id: 4 },
+        // May 26
+        { kittenId: 'p_gray', date: '2026-05-26', weight: 114, id: 5 },
+        { kittenId: 'p_red', date: '2026-05-26', weight: 94, id: 6 },
+        { kittenId: 'p_violet', date: '2026-05-26', weight: 108, id: 7 },
+        { kittenId: 'p_pink', date: '2026-05-26', weight: 84, id: 8 },
+        // May 28
+        { kittenId: 'p_gray', date: '2026-05-28', weight: 128, id: 9 },
+        { kittenId: 'p_red', date: '2026-05-28', weight: 111, id: 10 },
+        { kittenId: 'p_violet', date: '2026-05-28', weight: 121, id: 11 },
+        { kittenId: 'p_pink', date: '2026-05-28', weight: 97, id: 12 },
+        // May 30
+        { kittenId: 'p_gray', date: '2026-05-30', weight: 137, id: 13 },
+        { kittenId: 'p_red', date: '2026-05-30', weight: 123, id: 14 },
+        { kittenId: 'p_violet', date: '2026-05-30', weight: 135, id: 15 },
+        { kittenId: 'p_pink', date: '2026-05-30', weight: 113, id: 16 },
+        // June 1
+        { kittenId: 's_black', date: '2026-06-01', weight: 93, id: 17 },
+        { kittenId: 's_white', date: '2026-06-01', weight: 84, id: 18 },
+        { kittenId: 'p_gray', date: '2026-06-01', weight: 158, id: 19 },
+        { kittenId: 'p_red', date: '2026-06-01', weight: 138, id: 20 },
+        { kittenId: 'p_violet', date: '2026-06-01', weight: 143, id: 21 },
+        { kittenId: 'p_pink', date: '2026-06-01', weight: 123, id: 22 },
+        // June 4
+        { kittenId: 'p_gray', date: '2026-06-04', weight: 172, id: 23 },
+        { kittenId: 'p_red', date: '2026-06-04', weight: 157, id: 24 },
+        { kittenId: 'p_violet', date: '2026-06-04', weight: 154, id: 25 },
+        { kittenId: 'p_pink', date: '2026-06-04', weight: 137, id: 26 },
+        { kittenId: 's_black', date: '2026-06-04', weight: 128, id: 27 },
+        { kittenId: 's_white', date: '2026-06-04', weight: 121, id: 28 }
+    ];
+
+    let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || defaultKittens;
+    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || preloadedWeights;
+    let myChart = null; // Holds the Chart.js instance
+
+    document.getElementById('weigh-date').valueAsDate = new Date();
+
+    // --- Core Functions ---
     function switchTab(tabId) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
+        
         document.getElementById(tabId).classList.add('active');
         event.target.classList.add('active');
-        if(tabId === 'dashboard') renderDashboard();
-    }
 
-    // --- Google Sheets Sync ---
-    async function handleSaveWeight() {
-        const payload = {
-            date: document.getElementById('weigh-date').value,
-            kitten: document.getElementById('kitten-select').value,
-            weight: document.getElementById('weight-input').value,
-            type: 'weight'
-        };
-
-        try {
-            await fetch(CLOUD_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            alert('Weight logged to Google Sheets!');
-        } catch (e) {
-            alert('Failed to connect to cloud.');
+        if(tabId === 'dashboard') loadDashboard();
+        if(tabId === 'insights') loadInsights();
+        if(tabId === 'history') {
+            loadHistoryTable();
+            renderChart();
         }
     }
 
-    // --- Local Storage Management ---
-    function renderDashboard() {
-        const container = document.getElementById('kitten-list-display');
-        container.innerHTML = kittens.map(k => `
-            <div style="display:flex; align-items:center; margin-bottom:10px; padding:10px; background:#fff; border-radius:10px; border:1px solid #eee;">
-                <img src="${k.img || 'https://via.placeholder.com/60'}" class="kitten-profile-img">
-                <span>${k.name}</span>
-            </div>
-        `).join('');
+    function init() {
+        populateDropdown();
+        populateSettings();
+        loadDashboard();
     }
 
-    function initSettings() {
-        const ui = document.getElementById('settings-ui');
-        ui.innerHTML = kittens.map(k => `
-            <div style="margin-bottom:20px;">
-                <label>Name</label><input id="name-${k.id}" value="${k.name}" style="width:100%; padding:8px;">
-                <label>Profile Picture</label><input type="file" accept="image/*" onchange="handleImage(this, '${k.id}')">
-            </div>
-        `).join('');
-        
+    function populateDropdown() {
         const select = document.getElementById('kitten-select');
-        select.innerHTML = kittens.map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+        select.innerHTML = '';
+        kittens.forEach(k => {
+            let opt = document.createElement('option');
+            opt.value = k.id;
+            opt.textContent = `${k.name} (${k.litter}'s)`;
+            select.appendChild(opt);
+        });
     }
 
-    function handleImage(input, id) {
-        const reader = new FileReader();
-        reader.onload = e => kittens.find(k => k.id === id).img = e.target.result;
-        reader.readAsDataURL(input.files[0]);
+  async function saveWeight() {
+    const kId = document.getElementById('kitten-select').value;
+    const date = document.getElementById('weigh-date').value;
+    const weight = parseFloat(document.getElementById('weight-input').value);
+
+    if(!date || isNaN(weight)) {
+        alert('Please enter a valid date and weight.');
+        return;
     }
 
-    function saveLocalSettings() {
-        kittens.forEach(k => k.name = document.getElementById(`name-${k.id}`).value);
+    // 1. Update Local Storage
+    weights.push({ kittenId: kId, date: date, weight: weight, id: Date.now() });
+    localStorage.setItem('kt_weights_v3', JSON.stringify(weights));
+
+    // 2. Sync to Google Sheets
+    const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyfzrJe2swPRpwEpgLn2B7zYLuZR4INZE2QGIqERMXhr-Ao8vGQpiMA5h0vRuBvtV2C/exec";
+    const payload = {
+        date: date,
+        kitten: kId,
+        weight: weight,
+        type: 'weight'
+    };
+
+    try {
+        await fetch(CLOUD_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        console.log('Sync to Sheets successful');
+    } catch (e) {
+        console.error('Error syncing to cloud:', e);
+    }
+
+    // UI Feedback
+    document.getElementById('weight-input').value = '';
+    const msg = document.getElementById('save-msg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2000);
+    
+    loadDashboard();
+    loadInsights();
+}
+
+    // --- History & Chart ---
+    function loadHistoryTable() {
+        const tbody = document.getElementById('history-table-body');
+        tbody.innerHTML = '';
+        
+        // Sort newest first
+        const sorted = [...weights].sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+        
+        sorted.forEach(w => {
+            let k = kittens.find(kt => kt.id === w.kittenId);
+            let kName = k ? k.name : 'Unknown';
+            let dateStr = new Date(w.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><strong>${kName}</strong></td>
+                    <td>${w.weight}g</td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        
+        // Extract unique dates sorted
+        let allDates = [...new Set(weights.map(w => w.date))].sort((a,b) => new Date(a) - new Date(b));
+        let displayDates = allDates.map(d => new Date(d).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}));
+
+        // Prepare datasets per kitten
+        let datasets = kittens.map(k => {
+            // Find weights matching the unique dates
+            let dataPoints = allDates.map(dateStr => {
+                let record = weights.find(w => w.kittenId === k.id && w.date === dateStr);
+                return record ? record.weight : null; 
+            });
+
+            return {
+                label: k.name,
+                data: dataPoints,
+                borderColor: k.color,
+                backgroundColor: k.color,
+                tension: 0.3,
+                spanGaps: true // Connects lines even if a day is skipped
+            };
+        });
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: displayDates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                },
+                scales: {
+                    y: { title: { display: true, text: 'Weight (g)' } }
+                }
+            }
+        });
+    }
+
+    // --- Dashboard & Insights ---
+    function loadDashboard() {
+        const remindersDiv = document.getElementById('reminders-container');
+        remindersDiv.innerHTML = '';
+        
+        const litters = [
+            { name: "Porchetta's", dob: "2026-05-25" },
+            { name: "Sassy's", dob: "2026-06-01" }
+        ];
+
+        litters.forEach(litter => {
+            let dob = new Date(litter.dob);
+            let dewormDate = new Date(dob);
+            dewormDate.setDate(dewormDate.getDate() + 14);
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            dewormDate.setHours(0,0,0,0);
+
+            const timeDiff = dewormDate.getTime() - today.getTime();
+            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+            let statusStr = "";
+            if(daysLeft > 0) statusStr = `in ${daysLeft} days`;
+            else if (daysLeft === 0) statusStr = `TODAY!`;
+            else statusStr = `${Math.abs(daysLeft)} days ago`;
+
+            remindersDiv.innerHTML += `
+                <div class="reminder-card">
+                    <strong>🐛 Deworming: ${litter.name} Kittens</strong>
+                    Day 14 is on ${dewormDate.toDateString()} (${statusStr}).
+                </div>
+            `;
+        });
+        
+        loadInsights(true); // Loads top gainer into dashboard
+    }
+
+    function loadInsights(dashOnly = false) {
+        let weeklyGains = {}; 
+        let kittenData = {};
+        
+        kittens.forEach(k => {
+            kittenData[k.id] = weights.filter(w => w.kittenId === k.id).sort((a,b) => new Date(a.date) - new Date(b.date));
+        });
+
+        // 1. Calculate Highest Gainer by Week
+        kittens.forEach(k => {
+            let data = kittenData[k.id];
+            if(data.length < 2) return;
+            
+            let dob = new Date(k.dob);
+            let weekBins = {};
+            
+            data.forEach(w => {
+                let daysOld = Math.floor((new Date(w.date) - dob) / (1000 * 3600 * 24));
+                let weekNum = Math.floor(daysOld / 7) + 1;
+                if(!weekBins[weekNum]) weekBins[weekNum] = [];
+                weekBins[weekNum].push(w.weight);
+            });
+
+            for(let week in weekBins) {
+                if(weekBins[week].length >= 1) {
+                    if(!weeklyGains[week]) weeklyGains[week] = [];
+                    let min = Math.min(...weekBins[week]);
+                    let max = Math.max(...weekBins[week]);
+                    
+                    let gain = max - min; 
+                    if(weekBins[week].length === 1) {
+                        let prevWeights = data.filter(w => Math.floor((new Date(w.date) - dob)/(1000*3600*24))/7 + 1 < week);
+                        if(prevWeights.length > 0) {
+                            gain = max - prevWeights[prevWeights.length-1].weight;
+                        } else {
+                            gain = 0; 
+                        }
+                    }
+                    if(gain > 0) {
+                        weeklyGains[week].push({ id: k.id, name: k.name, gain: gain });
+                    }
+                }
+            }
+        });
+
+        // Render Top Gainers (Dashboard & Insights)
+        let weeksArr = Object.keys(weeklyGains).sort((a,b) => b - a); // Newest week first
+        let gainersHTML = '';
+        
+        if(weeksArr.length === 0) {
+            gainersHTML = '<p style="font-size:0.9em;">No weekly gains recorded yet.</p>';
+        } else {
+            weeksArr.forEach(week => {
+                let stats = weeklyGains[week];
+                if(stats.length > 0) {
+                    stats.sort((a,b) => b.gain - a.gain);
+                    let winner = stats[0];
+                    gainersHTML += `<div class="stat-row" style="background:#fff; padding:10px; border-radius:8px; margin-bottom:8px;">
+                        <span><strong>Week ${week}</strong></span> 
+                        <span>${winner.name} (+${winner.gain.toFixed(1)}g) 🌟</span>
+                    </div>`;
+                }
+            });
+        }
+
+        if(dashOnly) {
+            // Only show the most recent week's winner on the dash
+            const dashDiv = document.getElementById('weekly-gainers-dash');
+            if(weeksArr.length > 0 && weeklyGains[weeksArr[0]].length > 0) {
+                let topWeek = weeksArr[0];
+                let winner = weeklyGains[topWeek].sort((a,b) => b.gain - a.gain)[0];
+                dashDiv.innerHTML = `<div class="stat-row" style="margin:0;">
+                    <span><strong>Week ${topWeek}</strong></span> 
+                    <span>${winner.name} (+${winner.gain.toFixed(1)}g) 🌟</span>
+                </div>`;
+            } else {
+                dashDiv.innerHTML = '<p style="font-size:0.9em; margin:0;">Need more data!</p>';
+            }
+            return;
+        }
+
+        document.getElementById('weekly-gainers').innerHTML = gainersHTML;
+
+        // 2. Total Growth %
+        const growthDiv = document.getElementById('total-growth');
+        growthDiv.innerHTML = '';
+        kittens.forEach(k => {
+            let data = kittenData[k.id];
+            if(data.length >= 2) {
+                let first = data[0].weight;
+                let last = data[data.length-1].weight;
+                let pct = (((last - first) / first) * 100).toFixed(1);
+                growthDiv.innerHTML += `<div class="stat-row"><span>${k.name}</span> <span>+${pct}%</span></div>`;
+            } else {
+                growthDiv.innerHTML += `<div class="stat-row"><span>${k.name}</span> <span style="color:#aaa;">Need data</span></div>`;
+            }
+        });
+    }
+
+    function populateSettings() {
+        const list = document.getElementById('kitten-edit-list');
+        list.innerHTML = '';
+        kittens.forEach(k => {
+            let badgeClass = k.litter === 'Porchetta' ? 'badge-porchetta' : 'badge-sassy';
+            list.innerHTML += `
+                <div class="kitten-edit">
+                    <input type="text" id="edit-${k.id}" value="${k.name}">
+                    <span class="litter-badge ${badgeClass}">${k.litter}'s</span>
+                </div>
+            `;
+        });
+    }
+
+    function saveKittenNames() {
+        kittens.forEach(k => {
+            let newVal = document.getElementById(`edit-${k.id}`).value;
+            if(newVal.trim() !== '') {
+                k.name = newVal;
+            }
+        });
         localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
-        alert('Settings saved locally!');
+        populateDropdown(); 
+        
+        const msg = document.getElementById('settings-msg');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+        
+        loadHistoryTable();
+        renderChart();
     }
 
-    document.getElementById('weigh-date').valueAsDate = new Date();
-    initSettings();
-    renderDashboard();
+    // Run startup
+    init();
+
 </script>
 </body>
 </html>
