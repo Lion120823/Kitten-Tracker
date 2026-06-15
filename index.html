@@ -30,11 +30,7 @@
         .history-table td { padding: 10px; border-bottom: 1px solid #eee; }
         .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 25px; }
         .kitten-edit { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .badge-porchetta { background: #ffe4e1; color: #d87093; padding: 5px 10px; border-radius: 10px; font-size: 0.8em; }
-        .badge-sassy { background: #e6e6fa; color: #9370db; padding: 5px 10px; border-radius: 10px; font-size: 0.8em; }
         .insight-card { background: var(--background); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .insight-title { font-weight: 700; color: var(--secondary); margin-bottom: 10px; border-bottom: 2px solid white; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -53,10 +49,7 @@
         <div id="dashboard" class="section active">
             <h3 style="margin-bottom: 15px; color: var(--primary);">Health Reminders 🍼</h3>
             <div id="reminders-container"></div>
-            <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--secondary);">Top Gainer (Recent)</h3>
-            <div class="insight-card"><div id="weekly-gainers-dash"></div></div>
         </div>
-
         <div id="weighin" class="section">
             <h3 style="margin-bottom: 20px; color: var(--primary);">New Weigh-In ⚖️</h3>
             <select id="kitten-select" class="form-group"></select>
@@ -65,36 +58,31 @@
             <button class="btn-submit" onclick="saveWeight()">Save Weight</button>
             <div id="save-msg" style="color: mediumseagreen; margin-top: 10px; display: none;">Saved successfully!</div>
         </div>
-
         <div id="history" class="section">
             <div class="chart-container"><canvas id="growthChart"></canvas></div>
             <table class="history-table"><thead><tr><th>Date</th><th>Kitten</th><th>Weight</th></tr></thead><tbody id="history-table-body"></tbody></table>
         </div>
-
         <div id="insights" class="section">
-            <div class="insight-card"><div class="insight-title">Total Growth %</div><div id="total-growth"></div></div>
-            <div class="insight-card"><div class="insight-title">🏆 Top Gainers by Week</div><div id="weekly-gainers"></div></div>
+            <div class="insight-card"><div id="weekly-gainers"></div></div>
         </div>
-
         <div id="settings" class="section">
-    <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Kittens 🐱</h3>
-    <div id="kitten-edit-list"></div>
-    <button class="btn-submit" style="margin-top: 15px;" onclick="saveKittenNames()">Save Changes</button>
-    
-    <button class="btn-submit" style="margin-top: 15px; background: #ff6b6b;" onclick="resetAppData()">Clear All Data</button>
-    <div id="settings-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Updated!</div>
-</div>
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Kittens 🐱</h3>
+            <div id="kitten-edit-list"></div>
+            <button class="btn-submit" style="margin-top: 15px;" onclick="saveKittenNames()">Save Changes</button>
+            <button class="btn-submit" style="margin-top: 15px; background: #ff6b6b;" onclick="resetAppData()">Clear All Data</button>
+            <div id="settings-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Updated!</div>
+        </div>
     </div>
 </div>
 
 <script>
-    const kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || [
-        { id: 'p_gray', name: 'Gray Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#808080' },
-        { id: 'p_red', name: 'Red Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ff4d4d' },
-        { id: 'p_violet', name: 'Violet Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#da70d6' },
-        { id: 'p_pink', name: 'Pink Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ffb6c1' },
-        { id: 's_black', name: 'Black Collar', litter: 'Sassy', dob: '2026-06-01', color: '#333333' },
-        { id: 's_white', name: 'White Collar', litter: 'Sassy', dob: '2026-06-01', color: '#d3d3d3' }
+    let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || [
+        { id: 'p_gray', name: 'Gray Collar', dob: '2026-05-25' },
+        { id: 'p_red', name: 'Red Collar', dob: '2026-05-25' },
+        { id: 'p_violet', name: 'Violet Collar', dob: '2026-05-25' },
+        { id: 'p_pink', name: 'Pink Collar', dob: '2026-05-25' },
+        { id: 's_black', name: 'Black Collar', dob: '2026-06-01' },
+        { id: 's_white', name: 'White Collar', dob: '2026-06-01' }
     ];
     let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || [];
     let myChart = null;
@@ -106,7 +94,19 @@
         btn.classList.add('active');
         if(tabId === 'dashboard') loadDashboard();
         if(tabId === 'history') { loadHistoryTable(); renderChart(); }
-        if(tabId === 'insights') loadInsights();
+    }
+
+    function populateDropdown() {
+        document.getElementById('kitten-select').innerHTML = kittens.map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+    }
+
+    function populateSettings() {
+        document.getElementById('kitten-edit-list').innerHTML = kittens.map(k => `
+            <div class="kitten-edit" style="display:flex; flex-direction:column; margin-bottom:15px;">
+                <label>Name</label><input type="text" id="edit-name-${k.id}" value="${k.name}">
+                <label>Birthdate</label><input type="date" id="edit-dob-${k.id}" value="${k.dob || ''}">
+            </div>
+        `).join('');
     }
 
     async function saveWeight() {
@@ -118,7 +118,6 @@
         weights.push({ kittenId: kId, date, weight, id: Date.now() });
         localStorage.setItem('kt_weights_v3', JSON.stringify(weights));
         
-        // Google Sheets Sync
         const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyfzrJe2swPRpwEpgLn2B7zYLuZR4INZE2QGIqERMXhr-Ao8vGQpiMA5h0vRuBvtV2C/exec";
         fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({date, kitten: kId, weight, type: 'weight'}) });
         
@@ -131,40 +130,47 @@
         container.innerHTML = '';
         const today = new Date(); today.setHours(0,0,0,0);
         kittens.forEach(k => {
+            if(!k.dob) return;
             [3, 5, 7, 9].forEach(w => {
                 let d = new Date(k.dob); d.setDate(d.getDate() + (w * 7));
-                let diff = Math.round((d - today) / (86400000));
+                let diff = Math.round((d - today) / 86400000);
                 if (diff >= -3 && diff <= 14) container.innerHTML += `<div class="reminder-card"><strong>🐛 ${k.name} (${w}w)</strong> Due: ${d.toDateString()} (${diff < 0 ? 'OVERDUE' : diff + ' days'})</div>`;
             });
         });
-        loadInsights(true);
     }
 
     function renderChart() {
         const ctx = document.getElementById('growthChart').getContext('2d');
         if(myChart) myChart.destroy();
-        myChart = new Chart(ctx, { type: 'line', data: { labels: [...new Set(weights.map(w => w.date))].sort(), datasets: kittens.map(k => ({ label: k.name, data: [...new Set(weights.map(w => w.date))].sort().map(d => weights.find(w => w.kittenId === k.id && w.date === d)?.weight || null), borderColor: k.color, tension: 0.3 })) }, options: { maintainAspectRatio: false } });
+        myChart = new Chart(ctx, { type: 'line', data: { labels: [...new Set(weights.map(w => w.date))].sort(), datasets: kittens.map(k => ({ label: k.name, data: [...new Set(weights.map(w => w.date))].sort().map(d => weights.find(w => w.kittenId === k.id && w.date === d)?.weight || null), tension: 0.3 })) }, options: { maintainAspectRatio: false } });
     }
 
     function loadHistoryTable() {
-        document.getElementById('history-table-body').innerHTML = weights.sort((a,b) => new Date(b.date) - new Date(a.date)).map(w => `<tr><td>${w.date}</td><td>${kittens.find(k=>k.id===w.kittenId).name}</td><td>${w.weight}g</td></tr>`).join('');
-    }
-
-    function loadInsights(dashOnly = false) {
-        // Logic to calculate growth stats...
-        if(dashOnly) document.getElementById('weekly-gainers-dash').innerHTML = "Data Ready"; 
+        document.getElementById('history-table-body').innerHTML = weights.sort((a,b) => new Date(b.date) - new Date(a.date)).map(w => `<tr><td>${w.date}</td><td>${kittens.find(k=>k.id===w.kittenId)?.name || 'Unknown'}</td><td>${w.weight}g</td></tr>`).join('');
     }
 
     function saveKittenNames() {
-        kittens.forEach(k => k.name = document.getElementById(`edit-${k.id}`).value);
+        kittens.forEach(k => {
+            k.name = document.getElementById(`edit-name-${k.id}`).value;
+            k.dob = document.getElementById(`edit-dob-${k.id}`).value;
+        });
         localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
-        alert('Names Saved');
+        populateDropdown();
+        document.getElementById('settings-msg').style.display = 'block';
+        setTimeout(() => document.getElementById('settings-msg').style.display = 'none', 2000);
+    }
+
+    function resetAppData() {
+        if(confirm("Are you sure? This will delete ALL kitten and weight data!")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 
     // Initialization
     document.getElementById('weigh-date').valueAsDate = new Date();
-    document.getElementById('kitten-select').innerHTML = kittens.map(k => `<option value="${k.id}">${k.name}</option>`).join('');
-    document.getElementById('kitten-edit-list').innerHTML = kittens.map(k => `<div class="kitten-edit"><input type="text" id="edit-${k.id}" value="${k.name}"></div>`).join('');
+    populateDropdown();
+    populateSettings();
     loadDashboard();
 </script>
 </body>
