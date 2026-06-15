@@ -1,22 +1,646 @@
-
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta name="chromevox" content-script="no">
-<title>🐾 Purr-fect Kitten Tracker</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" nonce="w0R3V4iunyrunHCqF3b1GA"><link rel="stylesheet" href="/static/macros/client/css/2208734863-mae_html_css_ltr.css">
-<script type="text/javascript" src="/static/macros/client/js/528799579-warden_bin_i18n_warden.js" nonce="RdCEJ40aSX5oBVSvIs5Cjw"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐾 Purr-fect Kitten Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary: #ffb6c1; 
+            --secondary: #a2d2ff; 
+            --background: #fff0f5; 
+            --card-bg: #ffffff;
+            --text: #5c4d5c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px; /* Slightly wider for the chart */
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 85vh;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            background: #fff;
+            padding: 15px 5px;
+            border-bottom: 2px solid var(--background);
+            flex-wrap: wrap; /* Allows wrapping on very small screens */
+        }
+
+        .nav button {
+            background: none;
+            border: none;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #b0a0b0;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .nav button.active {
+            color: white;
+            background: var(--secondary);
+        }
+
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Forms & Cards */
+        .reminder-card {
+            background: #fff9e6;
+            border-left: 5px solid #ffcc00;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .reminder-card strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #d4a000;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--background);
+            border-radius: 10px;
+            font-size: 1em;
+            outline: none;
+            transition: border 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--secondary); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4);
+            transition: transform 0.2s;
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* History Table */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .history-table th {
+            background: var(--background);
+            color: var(--secondary);
+            padding: 10px;
+            text-align: left;
+            border-radius: 5px;
+        }
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        /* Settings */
+        .kitten-edit {
+            display: flex; gap: 10px; margin-bottom: 10px; align-items: center;
+        }
+        .kitten-edit input { flex-grow: 1; }
+        .litter-badge {
+            padding: 8px 12px; background: #eee; border-radius: 10px;
+            font-size: 0.8em; min-width: 90px; text-align: center; font-weight: 600;
+        }
+        .badge-porchetta { background: #ffe4e1; color: #d87093; }
+        .badge-sassy { background: #e6e6fa; color: #9370db; }
+        
+        .insight-card {
+            background: var(--background);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .insight-title {
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            border-bottom: 2px solid white;
+            padding-bottom: 5px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-<table id="warning-bar-table" class="full_size" cellspacing="0" cellpadding="0"><tr><td><div id="warning" class="warning-bar"></div></td></tr><tr><td style="height: 100%"><iframe id="sandboxFrame" title="🐾 Purr-fect Kitten Tracker" allow="accelerometer *; autoplay *; clipboard-read *; clipboard-write *; encrypted-media *; fullscreen *; geolocation *; gyroscope *; local-network-access *; magnetometer *; midi *; payment *; picture-in-picture *; screen-wake-lock *; sync-xhr *; web-share *" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation allow-storage-access-by-user-activation">
-</iframe>
-</td></tr></table><script nonce="RdCEJ40aSX5oBVSvIs5Cjw">
-(function() {
-var el = document.getElementById('sandboxFrame');
-el.onload = function() {
-goog.script.init("\x7b\x22functionNames\x22:\x5b\x22doGet\x22,\x22initDatabaseTab\x22,\x22getWeightsData\x22,\x22saveOrUpdateWeightRecord\x22,\x22deleteWeightRecord\x22,\x22getKittenNamesMapping\x22,\x22saveKittenNamesMapping\x22,\x22getCalendarReminders\x22,\x22getMockReminders\x22\x5d,\x22sandboxMode\x22:\x22IFRAME_SANDBOX\x22,\x22callbackTimeout\x22:390000,\x22deploymentId\x22:\x22AKfycbyWrjViU0lrLvXyYGUbvkOAlK8rdJ3879BYdRpupEP-wbm7HnSol_ti7V4r_zYW-bcv\x22,\x22eei\x22:\x22\x22,\x22sandboxHost\x22:\x22https:\/\/n-2qldt2f5632dlretvxmijqt2eiv37v3g56mhkjq-0lu-script.googleusercontent.com\x22,\x22clientSideProperties\x22:\x7b\x22google.script.sandbox.mode\x22:\x22IFRAME_SANDBOX\x22,\x22google.script.host.origin\x22:\x22https:\/\/docs.google.com\x22\x7d,\x22actionPrefix\x22:\x22\/macros\/s\/AKfycbyWrjViU0lrLvXyYGUbvkOAlK8rdJ3879BYdRpupEP-wbm7HnSol_ti7V4r_zYW-bcv\x22,\x22userHtml\x22:\x22\x3c!DOCTYPE html\x3e\\n\x3chtml lang\x3d\\\x22en\\\x22\x3e\\n\x3chead\x3e\\n    \x3cmeta charset\x3d\\\x22UTF-8\\\x22\x3e\\n    \x3cmeta name\x3d\\\x22viewport\\\x22 content\x3d\\\x22width\x3ddevice-width, initial-scale\x3d1.0\\\x22\x3e\\n    \x3ctitle\x3e🐾 Purr-fect Kitten Tracker\x3c\\\/title\x3e\\n    \x3clink href\x3d\\\x22https:\/\/fonts.googleapis.com\/css2?family\x3dQuicksand:wght@400;600;700\x26amp;display\x3dswap\\\x22 rel\x3d\\\x22stylesheet\\\x22\x3e\\n    \x3cscript src\x3d\\\x22https:\/\/cdn.jsdelivr.net\/npm\/chart.js\\\x22\x3e\x3c\\\/script\x3e\\n    \\n    \x3cstyle\x3e\\n        :root \x7b\\n            --primary: #ffb6c1; \\n            --secondary: #a2d2ff; \\n            --background: #fff0f5; \\n            --card-bg: #ffffff;\\n            --text: #5c4d5c;\\n        \x7d\\n\\n        * \x7b box-sizing: border-box; margin: 0; padding: 0; font-family: \x27Quicksand\x27, sans-serif; \x7d\\n        body \x7b background-color: var(--background); color: var(--text); padding: 20px; display: flex; justify-content: center; \x7d\\n        \\n        .app-container \x7b\\n            width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 20px;\\n            box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; min-height: 85vh;\\n        \x7d\\n\\n        .header \x7b background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 1.5em; font-weight: 700; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; \x7d\\n        .nav \x7b display: flex; justify-content: space-around; background: #fff; padding: 15px 5px; border-bottom: 2px solid var(--background); flex-wrap: wrap; \x7d\\n        .nav button \x7b background: none; border: none; font-size: 0.95em; font-weight: 600; color: #b0a0b0; cursor: pointer; padding: 5px 8px; border-radius: 15px; transition: all 0.3s; \x7d\\n        .nav button.active \x7b color: white; background: var(--secondary); \x7d\\n        .content \x7b padding: 20px; flex-grow: 1; overflow-y: auto; \x7d\\n        .section \x7b display: none; animation: fadeIn 0.4s ease; \x7d\\n        .section.active \x7b display: block; \x7d\\n        @keyframes fadeIn \x7b from \x7b opacity: 0; transform: translateY(10px); \x7d to \x7b opacity: 1; transform: translateY(0); \x7d \x7d\\n\\n        .reminder-card \x7b background: #fff9e6; border-left: 5px solid #ffcc00; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9em; \x7d\\n        .reminder-card strong \x7b display: block; margin-bottom: 5px; color: #d4a000; \x7d\\n        .form-group \x7b margin-bottom: 12px; position: relative; \x7d\\n        label \x7b display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85em; \x7d\\n\\n         \\n        .collar-selector-grid \x7b display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; padding-bottom: 15px; justify-content: space-between; \x7d\\n        .collar-btn-wrapper \x7b display: flex; flex-direction: column; align-items: center; width: 75px; cursor: pointer; \x7d\\n        \\n        .collar-avatar-circle \x7b\\n            width: 54px; height: 54px; border-radius: 50%; border: 4px solid #eee;\\n            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background-size: cover; background-position: center;\\n            box-shadow: 0 2px 5px rgba(0,0,0,0.06);\\n        \x7d\\n        .collar-btn-wrapper:hover .collar-avatar-circle \x7b transform: translateY(-2px); \x7d\\n        .collar-btn-wrapper.active .collar-avatar-circle \x7b\\n            transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,0.15);\\n        \x7d\\n        \\n        .collar-label \x7b font-size: 0.72em; font-weight: 700; color: var(--text); margin-top: 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; opacity: 0.85; \x7d\\n        .collar-btn-wrapper.active .collar-label \x7b opacity: 1; color: #000; font-weight: 800; \x7d\\n\\n         \\n        .meta-preview-box \x7b background: #fdf6f7; border: 1px dashed var(--primary); padding: 8px 12px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 0.8em; font-weight: 600; \x7d\\n        .meta-preview-box span strong \x7b color: var(--text); \x7d\\n\\n        input \x7b width: 100%; padding: 10px; border: 2px solid var(--background); border-radius: 10px; font-size: 0.95em; outline: none; transition: border 0.3s; \x7d\\n        input:focus \x7b border-color: var(--secondary); \x7d\\n        .btn-submit \x7b width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1em; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4); margin-top: 10px; \x7d\\n        \\n         \\n        .history-table \x7b width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82em; \x7d\\n        .history-table th \x7b background: var(--background); color: var(--text); padding: 6px 8px; text-align: left; font-weight: 700; \x7d\\n        .history-table td \x7b padding: 5px 8px; border-bottom: 1px solid #f5f5f5; line-height: 1.2; \x7d\\n        \\n        .action-btn \x7b padding: 3px 6px; font-size: 0.75em; border: none; border-radius: 4px; cursor: pointer; margin-right: 3px; color: white; font-weight: 600; \x7d\\n        .edit-btn \x7b background: var(--secondary); \x7d\\n        .delete-btn \x7b background: #ff4d4d; \x7d\\n\\n        .pagination-container \x7b display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 12px; padding: 5px 0; \x7d\\n        .page-btn \x7b background: white; border: 1.5px solid var(--secondary); color: var(--text); padding: 4px 10px; font-size: 0.8em; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; \x7d\\n        .page-btn:disabled \x7b border-color: #eee; color: #ccc; cursor: not-allowed; \x7d\\n        .page-btn:not(:disabled):hover \x7b background: var(--secondary); color: white; \x7d\\n        #page-indicator \x7b font-size: 0.8em; font-weight: 700; color: var(--text); \x7d\\n\\n        .chart-container \x7b position: relative; height: 230px; width: 100%; margin-bottom: 20px; \x7d\\n        .kitten-edit \x7b display: flex; gap: 10px; margin-bottom: 8px; align-items: center; \x7d\\n        .kitten-edit input \x7b flex-grow: 1; padding: 8px; \x7d\\n        .litter-badge \x7b padding: 6px 10px; background: #eee; border-radius: 8px; font-size: 0.75em; min-width: 85px; text-align: center; font-weight: 600; \x7d\\n        .badge-porchetta \x7b background: #ffe4e1; color: #d87093; \x7d\\n        .badge-sassy \x7b background: #e6e6fa; color: #9370db; \x7d\\n        \\n        .insight-card \x7b background: var(--background); padding: 12px; border-radius: 12px; margin-bottom: 12px; \x7d\\n        .insight-title \x7b font-weight: 700; color: var(--text); margin-bottom: 8px; border-bottom: 2px solid white; padding-bottom: 3px; font-size: 0.9em; \x7d\\n        .stat-row \x7b display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.85em; \x7d\\n        .loading-cover \x7b text-align: center; color: var(--secondary); font-weight: bold; padding: 15px; font-size: 0.9em; \x7d\\n    \x3c\\\/style\x3e\\n\x3c\\\/head\x3e\\n\x3cbody\x3e\\n\\n\x3cdiv class\x3d\\\x22app-container\\\x22\x3e\\n    \x3cdiv class\x3d\\\x22header\\\x22\x3e🐾 Kitten Tracker\x3c\\\/div\x3e\\n    \\n    \x3cdiv class\x3d\\\x22nav\\\x22\x3e\\n        \x3cbutton class\x3d\\\x22active\\\x22 onclick\x3d\\\x22switchTab(\x27dashboard\x27)\\\x22\x3eHome\x3c\\\/button\x3e\\n        \x3cbutton onclick\x3d\\\x22switchTab(\x27weighin\x27)\\\x22\x3eWeigh In\x3c\\\/button\x3e\\n        \x3cbutton onclick\x3d\\\x22switchTab(\x27history\x27)\\\x22\x3eChart \x26 Insights\x3c\\\/button\x3e\\n        \x3cbutton onclick\x3d\\\x22switchTab(\x27settings\x27)\\\x22\x3eSettings\x3c\\\/button\x3e\\n    \x3c\\\/div\x3e\\n\\n    \x3cdiv class\x3d\\\x22content\\\x22\x3e\\n        \\n        \x3cdiv id\x3d\\\x22dashboard\\\x22 class\x3d\\\x22section active\\\x22\x3e\\n            \x3ch3 style\x3d\\\x22margin-bottom: 10px; font-size:1.1em; color: var(--text);\\\x22\x3eHealth Reminders 🍼\x3c\\\/h3\x3e\\n            \x3cdiv id\x3d\\\x22reminders-container\\\x22\x3e\x3cdiv class\x3d\\\x22loading-cover\\\x22\x3eSyncing Calendar Logs...\x3c\\\/div\x3e\x3c\\\/div\x3e\\n            \\n            \x3ch3 style\x3d\\\x22margin-top: 15px; margin-bottom: 10px; font-size:1.1em; color: var(--text);\\\x22\x3eTop Gainers This Week\x3c\\\/h3\x3e\\n            \x3cdiv class\x3d\\\x22insight-card\\\x22\x3e\\n                \x3cdiv id\x3d\\\x22weekly-gainers-dash\\\x22\x3e\x3cdiv class\x3d\\\x22loading-cover\\\x22\x3eProcessing analysis metrics...\x3c\\\/div\x3e\x3c\\\/div\x3e\\n            \x3c\\\/div\x3e\\n        \x3c\\\/div\x3e\\n\\n        \\n        \x3cdiv id\x3d\\\x22weighin\\\x22 class\x3d\\\x22section\\\x22\x3e\\n            \x3ch3 id\x3d\\\x22weigh-form-title\\\x22 style\x3d\\\x22margin-bottom: 15px; font-size:1.1em; color: var(--text);\\\x22\x3eNew Weigh-In ⚖️\x3c\\\/h3\x3e\\n            \x3cinput type\x3d\\\x22hidden\\\x22 id\x3d\\\x22editing-entry-id\\\x22 value\x3d\\\x22\\\x22\x3e\\n            \\n            \x3cdiv class\x3d\\\x22form-group\\\x22\x3e\\n                \x3clabel\x3eSelect Kitten Profile Profile\x3c\\\/label\x3e\\n                \x3cdiv class\x3d\\\x22collar-selector-grid\\\x22 id\x3d\\\x22collar-buttons-container\\\x22\x3e\x3c\\\/div\x3e\\n            \x3c\\\/div\x3e\\n\\n            \x3cdiv class\x3d\\\x22meta-preview-box\\\x22 id\x3d\\\x22litter-meta-display\\\x22\x3e\\n                \x3cspan\x3eMother: \x3cstrong id\x3d\\\x22lbl-mom\\\x22\x3e-\x3c\\\/strong\x3e\x3c\\\/span\x3e\\n                \x3cspan\x3eDoB: \x3cstrong id\x3d\\\x22lbl-dob\\\x22\x3e-\x3c\\\/strong\x3e\x3c\\\/span\x3e\\n            \x3c\\\/div\x3e\\n\\n            \x3cdiv class\x3d\\\x22form-group\\\x22\x3e\\n                \x3clabel\x3eDate\x3c\\\/label\x3e\\n                \x3cinput type\x3d\\\x22date\\\x22 id\x3d\\\x22weigh-date\\\x22\x3e\\n            \x3c\\\/div\x3e\\n            \x3cdiv class\x3d\\\x22form-group\\\x22\x3e\\n                \x3clabel\x3eWeight (g)\x3c\\\/label\x3e\\n                \x3cinput type\x3d\\\x22number\\\x22 id\x3d\\\x22weight-input\\\x22 placeholder\x3d\\\x22e.g., 150\\\x22\x3e\\n            \x3c\\\/div\x3e\\n            \x3cbutton class\x3d\\\x22btn-submit\\\x22 id\x3d\\\x22weigh-submit-btn\\\x22 onclick\x3d\\\x22submitWeightForm()\\\x22\x3eSave Weight Entry\x3c\\\/button\x3e\\n            \x3cbutton class\x3d\\\x22btn-submit\\\x22 id\x3d\\\x22weigh-cancel-btn\\\x22 style\x3d\\\x22background:#b0a0b0; display:none; margin-top:5px;\\\x22 onclick\x3d\\\x22resetWeighInForm()\\\x22\x3eCancel Editing\x3c\\\/button\x3e\\n            \x3cdiv id\x3d\\\x22save-msg\\\x22 style\x3d\\\x22color: mediumseagreen; margin-top: 8px; text-align: center; display: none; font-weight: bold; font-size: 0.85em;\\\x22\x3eSaved to Google Sheets!\x3c\\\/div\x3e\\n\\n            \x3ch3 style\x3d\\\x22margin-top: 20px; margin-bottom: 8px; font-size:1.1em; color: var(--text);\\\x22\x3ePrevious History Log\x3c\\\/h3\x3e\\n            \x3ctable class\x3d\\\x22history-table\\\x22\x3e\\n                \x3cthead\x3e\\n                    \x3ctr\x3e\x3cth\x3eDate\x3c\\\/th\x3e\x3cth\x3eKitten Details\x3c\\\/th\x3e\x3cth\x3eWeight\x3c\\\/th\x3e\x3cth\x3eActions\x3c\\\/th\x3e\x3c\\\/tr\x3e\\n                \x3c\\\/thead\x3e\\n                \x3ctbody id\x3d\\\x22history-table-body\\\x22\x3e\x3c\\\/tbody\x3e\\n            \x3c\\\/table\x3e\\n\\n            \x3cdiv class\x3d\\\x22pagination-container\\\x22\x3e\\n                \x3cbutton class\x3d\\\x22page-btn\\\x22 id\x3d\\\x22prev-page-btn\\\x22 onclick\x3d\\\x22changeHistoryPage(-1)\\\x22\x3ePrev\x3c\\\/button\x3e\\n                \x3cspan id\x3d\\\x22page-indicator\\\x22\x3ePage 1 of 1\x3c\\\/span\x3e\\n                \x3cbutton class\x3d\\\x22page-btn\\\x22 id\x3d\\\x22next-page-btn\\\x22 onclick\x3d\\\x22changeHistoryPage(1)\\\x22\x3eNext\x3c\\\/button\x3e\\n            \x3c\\\/div\x3e\\n        \x3c\\\/div\x3e\\n\\n        \\n        \x3cdiv id\x3d\\\x22history\\\x22 class\x3d\\\x22section\\\x22\x3e\\n            \x3ch3 style\x3d\\\x22margin-bottom: 10px; font-size:1.1em; color: var(--text);\\\x22\x3eGrowth Chart 📈\x3c\\\/h3\x3e\\n            \x3cdiv class\x3d\\\x22chart-container\\\x22\x3e\x3ccanvas id\x3d\\\x22growthChart\\\x22\x3e\x3c\\\/canvas\x3e\x3c\\\/div\x3e\\n            \\n            \x3ch3 style\x3d\\\x22margin-bottom: 10px; font-size:1.1em; color: var(--text);\\\x22\x3eGrowth Insights 📊\x3c\\\/h3\x3e\\n            \x3cdiv class\x3d\\\x22insight-card\\\x22\x3e\\n                \x3cdiv class\x3d\\\x22insight-title\\\x22\x3eTotal Growth % (Since Entry Day 1)\x3c\\\/div\x3e\\n                \x3cdiv id\x3d\\\x22total-growth\\\x22\x3e\x3c\\\/div\x3e\\n            \x3c\\\/div\x3e\\n            \x3cdiv class\x3d\\\x22insight-card\\\x22\x3e\\n                \x3cdiv class\x3d\\\x22insight-title\\\x22\x3e🏆 Top Gainers by Week\x3c\\\/div\x3e\\n                \x3cdiv id\x3d\\\x22weekly-gainers\\\x22\x3e\x3c\\\/div\x3e\\n            \x3c\\\/div\x3e\\n        \x3c\\\/div\x3e\\n\\n        \\n        \x3cdiv id\x3d\\\x22settings\\\x22 class\x3d\\\x22section\\\x22\x3e\\n            \x3ch3 style\x3d\\\x22margin-bottom: 12px; font-size:1.1em; color: var(--text);\\\x22\x3eManage Name Profiles 🐱\x3c\\\/h3\x3e\\n            \x3cp style\x3d\\\x22font-size: 0.8em; margin-bottom: 10px; color: gray;\\\x22\x3eRename profiles as their true personalities develop:\x3c\\\/p\x3e\\n            \x3cdiv id\x3d\\\x22kitten-edit-list\\\x22\x3e\x3c\\\/div\x3e\\n            \x3cbutton class\x3d\\\x22btn-submit\\\x22 style\x3d\\\x22margin-top: 10px;\\\x22 onclick\x3d\\\x22updateKittenNamesBackend()\\\x22\x3eSave System Names\x3c\\\/button\x3e\\n            \x3cdiv id\x3d\\\x22settings-msg\\\x22 style\x3d\\\x22color: mediumseagreen; margin-top: 8px; text-align: center; display: none; font-weight: bold; font-size:0.85em;\\\x22\x3eSheet Profiles Updated!\x3c\\\/div\x3e\\n        \x3c\\\/div\x3e\\n    \x3c\\\/div\x3e\\n\x3c\\\/div\x3e\\n\\n\x3cscript\x3e\\n    \\n    let defaultKittens \x3d \x5b\\n        \x7b id: \x27p_gray\x27, name: \x27Gray Collar\x27, litter: \x27Porchetta\x27, dob: \x272026-05-25\x27, color: \x27#808080\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1514888286974-6c03e2ca1dba?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d, \\n        \x7b id: \x27p_red\x27, name: \x27Red Collar\x27, litter: \x27Porchetta\x27, dob: \x272026-05-25\x27, color: \x27#ff4d4d\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1494256997604-768d1f608cac?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d, \\n        \x7b id: \x27p_violet\x27, name: \x27Violet Collar\x27, litter: \x27Porchetta\x27, dob: \x272026-05-25\x27, color: \x27#da70d6\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1548247416-ec66f4900b2e?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d, \\n        \x7b id: \x27p_pink\x27, name: \x27Pink Collar\x27, litter: \x27Porchetta\x27, dob: \x272026-05-25\x27, color: \x27#ffb6c1\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1574158622643-69d34d72650a?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d, \\n        \x7b id: \x27s_black\x27, name: \x27Black Collar\x27, litter: \x27Sassy\x27, dob: \x272026-06-01\x27, color: \x27#333333\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1533738363-b7f9aef128ce?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d, \\n        \x7b id: \x27s_white\x27, name: \x27White Collar\x27, litter: \x27Sassy\x27, dob: \x272026-06-01\x27, color: \x27#e0e0e0\x27, avatar: \x27https:\/\/images.unsplash.com\/photo-1592194996308-7b43878e84a6?w\x3d150\x26auto\x3dformat\x26fit\x3dcrop\x26q\x3d80\x27 \x7d  \\n    \x5d;\\n\\n    let kittens \x3d \x5b...defaultKittens\x5d;\\n    \\n    \\n    let weights \x3d \x5b\\n        \x7b id: \\\x22raw_13_1\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22s_white\\\x22, weight: 198 \x7d,\\n        \x7b id: \\\x22raw_13_2\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22s_black\\\x22, weight: 215 \x7d,\\n        \x7b id: \\\x22raw_13_3\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22p_pink\\\x22, weight: 168 \x7d,\\n        \x7b id: \\\x22raw_13_4\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22p_violet\\\x22, weight: 204 \x7d,\\n        \x7b id: \\\x22raw_13_5\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22p_red\\\x22, weight: 240 \x7d,\\n        \x7b id: \\\x22raw_13_6\\\x22, date: \\\x222026-06-13\\\x22, kittenId: \\\x22p_gray\\\x22, weight: 264 \x7d,\\n        \x7b id: \\\x22raw_11_1\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22s_white\\\x22, weight: 163 \x7d,\\n        \x7b id: \\\x22raw_11_2\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22s_black\\\x22, weight: 187 \x7d,\\n        \x7b id: \\\x22raw_11_3\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22p_pink\\\x22, weight: 161 \x7d,\\n        \x7b id: \\\x22raw_11_4\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22p_violet\\\x22, weight: 183 \x7d,\\n        \x7b id: \\\x22raw_11_5\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22p_red\\\x22, weight: 214 \x7d,\\n        \x7b id: \\\x22raw_11_6\\\x22, date: \\\x222026-06-11\\\x22, kittenId: \\\x22p_gray\\\x22, weight: 231 \x7d,\\n        \x7b id: \\\x22raw_07_1\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22s_white\\\x22, weight: 158 \x7d,\\n        \x7b id: \\\x22raw_07_2\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22s_black\\\x22, weight: 176 \x7d,\\n        \x7b id: \\\x22raw_07_3\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22p_pink\\\x22, weight: 155 \x7d,\\n        \x7b id: \\\x22raw_07_4\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22p_violet\\\x22, weight: 170 \x7d,\\n        \x7b id: \\\x22raw_07_5\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22p_red\\\x22, weight: 193 \x7d,\\n        \x7b id: \\\x22raw_07_6\\\x22, date: \\\x222026-06-07\\\x22, kittenId: \\\x22p_gray\\\x22, weight: 211 \x7d,\\n        \x7b id: \\\x22raw_04_1\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22s_white\\\x22, weight: 121 \x7d,\\n        \x7b id: \\\x22raw_04_2\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22s_black\\\x22, weight: 128 \x7d,\\n        \x7b id: \\\x22raw_04_3\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22p_pink\\\x22, weight: 137 \x7d,\\n        \x7b id: \\\x22raw_04_4\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22p_violet\\\x22, weight: 154 \x7d,\\n        \x7b id: \\\x22raw_04_5\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22p_red\\\x22, weight: 157 \x7d,\\n        \x7b id: \\\x22raw_04_6\\\x22, date: \\\x222026-06-04\\\x22, kittenId: \\\x22p_gray\\\x22, weight: 172 \x7d,\\n        \x7b id: \\\x22raw_01_1\\\x22, date: \\\x222026-06-01\\\x22, kittenId: \\\x22p_pink\\\x22, weight: 123 \x7d,\\n        \x7b id: \\\x22raw_01_2\\\x22, date: \\\x222026-06-01\\\x22, kittenId: \\\x22p_violet\\\x22, weight: 143 \x7d,\\n        \x7b id: \\\x22raw_01_3\\\x22, date: \\\x222026-06-01\\\x22, kittenId: \\\x22p_red\\\x22, weight: 138 \x7d\\n    \x5d;\\n\\n    let selectedKittenId \x3d \x27p_gray\x27;\\n    let myChart \x3d null;\\n    let currentLogPage \x3d 1;\\n    const recordsPerPage \x3d 5;\\n\\n    document.getElementById(\x27weigh-date\x27).valueAsDate \x3d new Date();\\n\\n    function switchTab(tabId) \x7b\\n        document.querySelectorAll(\x27.section\x27).forEach(sec \x3d\x3e sec.classList.remove(\x27active\x27));\\n        document.querySelectorAll(\x27.nav button\x27).forEach(btn \x3d\x3e btn.classList.remove(\x27active\x27));\\n        document.getElementById(tabId).classList.add(\x27active\x27);\\n        if(event \x26\x26 event.target) event.target.classList.add(\x27active\x27);\\n\\n        if(tabId \x3d\x3d\x3d \x27dashboard\x27) loadDashboardData();\\n        if(tabId \x3d\x3d\x3d \x27history\x27) \x7b renderGrowthChart(); generateInsights(); \x7d\\n    \x7d\\n\\n    window.onload \x3d function() \x7b\\n        buildCollarButtons();\\n        updateMetadataLabels();\\n        if (typeof google !\x3d\x3d \x27undefined\x27) \x7b\\n            google.script.run.withSuccessHandler(function(namesMapping) \x7b\\n                if(namesMapping) \x7b\\n                    kittens.forEach(k \x3d\x3e \x7b if(namesMapping\x5bk.id\x5d) k.name \x3d namesMapping\x5bk.id\x5d; \x7d);\\n                \x7d\\n                buildCollarButtons();\\n                updateMetadataLabels();\\n                populateSettingsView();\\n                \\n                google.script.run.withSuccessHandler(function(weightsData) \x7b\\n                    if (weightsData \x26\x26 weightsData.length \x3e 0) \x7b\\n                        weights \x3d weightsData;\\n                    \x7d\\n                    loadDashboardData();\\n                    currentLogPage \x3d 1;\\n                    populateHistoryLogTable();\\n                \x7d).getWeightsData();\\n            \x7d).getKittenNamesMapping();\\n        \x7d else \x7b\\n            loadDashboardData();\\n            populateHistoryLogTable();\\n            populateSettingsView();\\n        \x7d\\n    \x7d;\\n\\n    function buildCollarButtons() \x7b\\n        const container \x3d document.getElementById(\x27collar-buttons-container\x27);\\n        container.innerHTML \x3d \x27\x27;\\n        kittens.forEach(k \x3d\x3e \x7b\\n            let wrapper \x3d document.createElement(\x27div\x27);\\n            wrapper.className \x3d \x27collar-btn-wrapper\x27 + (k.id \x3d\x3d\x3d selectedKittenId ? \x27 active\x27 : \x27\x27);\\n            \\n            let circle \x3d document.createElement(\x27div\x27);\\n            circle.className \x3d \x27collar-avatar-circle\x27;\\n            circle.style.backgroundImage \x3d `url(\x27$\x7bk.avatar\x7d\x27)`;\\n            circle.style.borderColor \x3d k.id \x3d\x3d\x3d selectedKittenId ? k.color : \x27#eee\x27;\\n            \\n            let label \x3d document.createElement(\x27span\x27);\\n            label.className \x3d \x27collar-label\x27;\\n            label.innerText \x3d k.name;\\n            \\n            wrapper.appendChild(circle);\\n            wrapper.appendChild(label);\\n            \\n            wrapper.onclick \x3d () \x3d\x3e \x7b\\n                document.querySelectorAll(\x27.collar-btn-wrapper\x27).forEach(w \x3d\x3e \x7b\\n                    w.classList.remove(\x27active\x27);\\n                    w.querySelector(\x27.collar-avatar-circle\x27).style.borderColor \x3d \x27#eee\x27;\\n                \x7d);\\n                wrapper.classList.add(\x27active\x27);\\n                circle.style.borderColor \x3d k.color;\\n                selectedKittenId \x3d k.id;\\n                updateMetadataLabels();\\n            \x7d;\\n            container.appendChild(wrapper);\\n        \x7d);\\n    \x7d\\n\\n    function updateMetadataLabels() \x7b\\n        let activeKitten \x3d kittens.find(k \x3d\x3e k.id \x3d\x3d\x3d selectedKittenId);\\n        if(activeKitten) \x7b\\n            document.getElementById(\x27lbl-mom\x27).innerText \x3d activeKitten.litter;\\n            let options \x3d \x7b month: \x27short\x27, day: \x27numeric\x27, year: \x27numeric\x27 \x7d;\\n            let parsedDate \x3d new Date(activeKitten.dob + \x27T00:00:00\x27);\\n            document.getElementById(\x27lbl-dob\x27).innerText \x3d parsedDate.toLocaleDateString(undefined, options);\\n        \x7d\\n    \x7d\\n\\n    function submitWeightForm() \x7b\\n        const weightVal \x3d parseFloat(document.getElementById(\x27weight-input\x27).value);\\n        const dateVal \x3d document.getElementById(\x27weigh-date\x27).value;\\n        const editId \x3d document.getElementById(\x27editing-entry-id\x27).value;\\n\\n        if(!dateVal || isNaN(weightVal)) \x7b\\n            alert(\x27Please enter valid data values.\x27);\\n            return;\\n        \x7d\\n\\n        let entryId \x3d editId ? editId : \\\x22w_\\\x22 + Date.now().toString();\\n        let payload \x3d \x7b id: entryId, date: dateVal, kittenId: selectedKittenId, weight: weightVal \x7d;\\n\\n        if (typeof google !\x3d\x3d \x27undefined\x27) \x7b\\n            google.script.run.withSuccessHandler(function(updatedWeights) \x7b\\n                weights \x3d updatedWeights || \x5b\x5d;\\n                populateHistoryLogTable();\\n                resetWeighInForm();\\n                showActionMessage(\x27save-msg\x27);\\n            \x7d).saveOrUpdateWeightRecord(payload);\\n        \x7d else \x7b\\n            if(editId) weights \x3d weights.filter(w \x3d\x3e w.id !\x3d\x3d editId);\\n            weights.push(payload);\\n            populateHistoryLogTable();\\n            resetWeighInForm();\\n            showActionMessage(\x27save-msg\x27);\\n        \x7d\\n    \x7d\\n\\n    function initEditMode(id) \x7b\\n        let record \x3d weights.find(w \x3d\x3e w.id \x3d\x3d\x3d id);\\n        if(!record) return;\\n        \\n        document.getElementById(\x27weigh-form-title\x27).innerText \x3d \\\x22✏️ Edit Record\\\x22;\\n        document.getElementById(\x27editing-entry-id\x27).value \x3d record.id;\\n        document.getElementById(\x27weigh-date\x27).value \x3d record.date;\\n        document.getElementById(\x27weight-input\x27).value \x3d record.weight;\\n        \\n        selectedKittenId \x3d record.kittenId;\\n        buildCollarButtons();\\n        updateMetadataLabels();\\n        \\n        document.getElementById(\x27weigh-submit-btn\x27).innerText \x3d \\\x22Update Record\\\x22;\\n        document.getElementById(\x27weigh-cancel-btn\x27).style.display \x3d \\\x22block\\\x22;\\n        window.scrollTo(\x7b top: 0, behavior: \x27smooth\x27 \x7d);\\n    \x7d\\n\\n    function triggerDeleteRecord(id) \x7b\\n        if(!confirm(\\\x22Are you sure you want to remove this weight record entry?\\\x22)) return;\\n        if(typeof google !\x3d\x3d \x27undefined\x27) \x7b\\n            google.script.run.withSuccessHandler(function(updatedWeights) \x7b\\n                weights \x3d updatedWeights || \x5b\x5d;\\n                populateHistoryLogTable();\\n            \x7d).deleteWeightRecord(id);\\n        \x7d else \x7b\\n            weights \x3d weights.filter(w \x3d\x3e w.id !\x3d\x3d id);\\n            populateHistoryLogTable();\\n        \x7d\\n    \x7d\\n\\n    function resetWeighInForm() \x7b\\n        document.getElementById(\x27weigh-form-title\x27).innerText \x3d \\\x22New Weigh-In ⚖️\\\x22;\\n        document.getElementById(\x27editing-entry-id\x27).value \x3d \\\x22\\\x22;\\n        document.getElementById(\x27weight-input\x27).value \x3d \\\x22\\\x22;\\n        document.getElementById(\x27weigh-date\x27).valueAsDate \x3d new Date();\\n        document.getElementById(\x27weigh-submit-btn\x27).innerText \x3d \\\x22Save Weight Entry\\\x22;\\n        document.getElementById(\x27weigh-cancel-btn\x27).style.display \x3d \\\x22none\\\x22;\\n        buildCollarButtons();\\n        updateMetadataLabels();\\n    \x7d\\n\\n    function populateHistoryLogTable() \x7b\\n        const tbody \x3d document.getElementById(\x27history-table-body\x27);\\n        tbody.innerHTML \x3d \x27\x27;\\n        \\n        if(!weights || weights.length \x3d\x3d\x3d 0) \x7b\\n            tbody.innerHTML \x3d \x27\x3ctr\x3e\x3ctd colspan\x3d\\\x224\\\x22 style\x3d\\\x22text-align:center; color:#aaa; padding:15px;\\\x22\x3eNo weight data logged yet.\x3c\\\/td\x3e\x3c\\\/tr\x3e\x27;\\n            document.getElementById(\x27prev-page-btn\x27).disabled \x3d true;\\n            document.getElementById(\x27next-page-btn\x27).disabled \x3d true;\\n            document.getElementById(\x27page-indicator\x27).innerText \x3d \\\x22Page 1 of 1\\\x22;\\n            return;\\n        \x7d\\n        \\n        let sorted \x3d \x5b...weights\x5d.sort((a,b) \x3d\x3e new Date(b.date) - new Date(a.date));\\n        let totalPages \x3d Math.ceil(sorted.length \/ recordsPerPage) || 1;\\n        if(currentLogPage \x3e totalPages) currentLogPage \x3d totalPages;\\n        if(currentLogPage \x3c 1) currentLogPage \x3d 1;\\n        \\n        let startIndex \x3d (currentLogPage - 1) * recordsPerPage;\\n        let endIndex \x3d startIndex + recordsPerPage;\\n        let pageItems \x3d sorted.slice(startIndex, endIndex);\\n        \\n        pageItems.forEach(w \x3d\x3e \x7b\\n            let k \x3d kittens.find(kt \x3d\x3e kt.id \x3d\x3d\x3d w.kittenId);\\n            let name \x3d k ? k.name : \x27Unknown\x27;\\n            let mom \x3d k ? k.litter : \x27-\x27;\\n            let formattedDoB \x3d k ? new Date(k.dob + \x27T00:00:00\x27).toLocaleDateString(undefined, \x7bmonth:\x27short\x27, day:\x27numeric\x27\x7d) : \x27-\x27;\\n            \\n            tbody.innerHTML +\x3d `\\n                \x3ctr\x3e\\n                    \x3ctd\x3e$\x7bw.date\x7d\x3c\\\/td\x3e\\n                    \x3ctd\x3e\\n                        \x3cstrong\x3e$\x7bname\x7d\x3c\\\/strong\x3e\x3cbr\x3e\\n                        \x3cspan style\x3d\\\x22font-size:0.85em; color:gray; opacity:0.85;\\\x22\x3eMom: $\x7bmom\x7d | DoB: $\x7bformattedDoB\x7d\x3c\\\/span\x3e\\n                    \x3c\\\/td\x3e\\n                    \x3ctd\x3e\x3cstrong\x3e$\x7bw.weight\x7dg\x3c\\\/strong\x3e\x3c\\\/td\x3e\\n                    \x3ctd\x3e\\n                        \x3cbutton class\x3d\\\x22action-btn edit-btn\\\x22 onclick\x3d\\\x22initEditMode(\x27$\x7bw.id\x7d\x27)\\\x22\x3eEdit\x3c\\\/button\x3e\\n                        \x3cbutton class\x3d\\\x22action-btn delete-btn\\\x22 onclick\x3d\\\x22triggerDeleteRecord(\x27$\x7bw.id\x7d\x27)\\\x22\x3eDel\x3c\\\/button\x3e\\n                    \x3c\\\/td\x3e\\n                \x3c\\\/tr\x3e\\n            `;\\n        \x7d);\\n        \\n        document.getElementById(\x27page-indicator\x27).innerText \x3d `Page $\x7bcurrentLogPage\x7d of $\x7btotalPages\x7d`;\\n        document.getElementById(\x27prev-page-btn\x27).disabled \x3d (currentLogPage \x3d\x3d\x3d 1);\\n        document.getElementById(\x27next-page-btn\x27).disabled \x3d (currentLogPage \x3d\x3d\x3d totalPages);\\n    \x7d\\n\\n    function changeHistoryPage(direction) \x7b\\n        currentLogPage +\x3d direction;\\n        populateHistoryLogTable();\\n    \x7d\\n\\n    function loadDashboardData() \x7b\\n        const remindersDiv \x3d document.getElementById(\x27reminders-container\x27);\\n        if (typeof google !\x3d\x3d \x27undefined\x27) \x7b\\n            google.script.run.withSuccessHandler(function(events) \x7b\\n                remindersDiv.innerHTML \x3d \x27\x27;\\n                if(!events || events.length \x3d\x3d\x3d 0) \x7b\\n                    remindersDiv.innerHTML \x3d `\x3cdiv class\x3d\\\x22reminder-card\\\x22 style\x3d\\\x22background:#f0fff0; border-left-color:mediumseagreen;\\\x22\x3e\x3cstrong style\x3d\\\x22color:mediumseagreen;\\\x22\x3e🐛 Everything looks clear!\x3c\\\/strong\x3eNo upcoming Dewormer treatments scheduled.\x3c\\\/div\x3e`;\\n                    return;\\n                \x7d\\n                events.forEach(e \x3d\x3e \x7b\\n                    remindersDiv.innerHTML +\x3d `\\n                        \x3cdiv class\x3d\\\x22reminder-card\\\x22\x3e\\n                            \x3cstrong\x3e🐛 $\x7be.title\x7d\x3c\\\/strong\x3e\\n                            Date target: $\x7be.dateStr\x7d ($\x7be.status\x7d).\\n                        \x3c\\\/div\x3e\\n                    `;\\n                \x7d);\\n            \x7d).getCalendarReminders();\\n        \x7d else \x7b\\n            remindersDiv.innerHTML \x3d `\x3cdiv class\x3d\\\x22reminder-card\\\x22\x3e\x3cstrong\x3e🐛 Deworming Schedule\x3c\\\/strong\x3eLocal preview fallback dashboard.\x3c\\\/div\x3e`;\\n        \x7d\\n        calculateGainerHighlights(true);\\n    \x7d\\n\\n    function calculateGainerHighlights(dashOnly \x3d false) \x7b\\n        let weeklyGains \x3d \x7b\x7d;\\n        if(!weights || weights.length \x3d\x3d\x3d 0) \x7b\\n            if(dashOnly) document.getElementById(\x27weekly-gainers-dash\x27).innerHTML \x3d \x27\x3cp style\x3d\\\x22font-size:0.85em; margin:0; color:#aaa;\\\x22\x3eAwaiting metrics entries...\x3c\\\/p\x3e\x27;\\n            return weeklyGains;\\n        \x7d\\n\\n        kittens.forEach(k \x3d\x3e \x7b\\n            let data \x3d weights.filter(w \x3d\x3e w.kittenId \x3d\x3d\x3d k.id).sort((a,b) \x3d\x3e new Date(a.date) - new Date(b.date));\\n            if(data.length \x3c 2) return;\\n            \\n            let dob \x3d new Date(k.dob + \x27T00:00:00\x27);\\n            let weekBins \x3d \x7b\x7d;\\n            data.forEach(w \x3d\x3e \x7b\\n                let daysOld \x3d Math.floor((new Date(w.date) - dob) \/ (1000 * 3600 * 24));\\n                let weekNum \x3d Math.floor(daysOld \/ 7) + 1;\\n                if(weekNum \x3e 0) \x7b\\n                    if(!weekBins\x5bweekNum\x5d) weekBins\x5bweekNum\x5d \x3d \x5b\x5d;\\n                    weekBins\x5bweekNum\x5d.push(w.weight);\\n                \x7d\\n            \x7d);\\n\\n            for(let week in weekBins) \x7b\\n                let min \x3d Math.min(...weekBins\x5bweek\x5d);\\n                let max \x3d Math.max(...weekBins\x5bweek\x5d);\\n                let gain \x3d max - min;\\n                if(gain \x3e 0) \x7b\\n                    if(!weeklyGains\x5bweek\x5d) weeklyGains\x5bweek\x5d \x3d \x5b\x5d;\\n                    weeklyGains\x5bweek\x5d.push(\x7b name: k.name, gain: gain \x7d);\\n                \x7d\\n            \x7d\\n        \x7d);\\n\\n        let weeksArr \x3d Object.keys(weeklyGains).sort((a,b) \x3d\x3e b - a);\\n        if(dashOnly) \x7b\\n            const dashDiv \x3d document.getElementById(\x27weekly-gainers-dash\x27);\\n            if(weeksArr.length \x3e 0 \x26\x26 weeklyGains\x5bweeksArr\x5b0\x5d\x5d.length \x3e 0) \x7b\\n                let currentTopWeek \x3d weeksArr\x5b0\x5d;\\n                let winner \x3d weeklyGains\x5bcurrentTopWeek\x5d.sort((a,b) \x3d\x3e b.gain - a.gain)\x5b0\x5d;\\n                dashDiv.innerHTML \x3d `\x3cdiv class\x3d\\\x22stat-row\\\x22 style\x3d\\\x22margin:0;\\\x22\x3e\x3cspan\x3e\x3cstrong\x3eWeek $\x7bcurrentTopWeek\x7d\x3c\\\/strong\x3e\x3c\\\/span\x3e \x3cspan\x3e$\x7bwinner.name\x7d (+$\x7bwinner.gain.toFixed(1)\x7dg) 🌟\x3c\\\/span\x3e\x3c\\\/div\x3e`;\\n            \x7d else \x7b\\n                dashDiv.innerHTML \x3d \x27\x3cp style\x3d\\\x22font-size:0.85em; margin:0; color:#aaa;\\\x22\x3eAwaiting metrics entries...\x3c\\\/p\x3e\x27;\\n            \x7d\\n        \x7d\\n        return weeklyGains;\\n    \x7d\\n\\n    function generateInsights() \x7b\\n        let weeklyGains \x3d calculateGainerHighlights(false);\\n        let weeksArr \x3d Object.keys(weeklyGains).sort((a,b) \x3d\x3e b - a);\\n        let html \x3d \x27\x27;\\n        \\n        weeksArr.forEach(w \x3d\x3e \x7b\\n            let entries \x3d weeklyGains\x5bw\x5d.sort((a,b) \x3d\x3e b.gain - a.gain);\\n            if(entries.length \x3e 0) \x7b\\n                html +\x3d `\x3cdiv class\x3d\\\x22stat-row\\\x22 style\x3d\\\x22background:#fff; padding:8px; border-radius:8px; margin-bottom:6px;\\\x22\x3e\\n                    \x3cspan\x3e\x3cstrong\x3eWeek $\x7bw\x7d Winner\x3c\\\/strong\x3e\x3c\\\/span\x3e\x3cspan\x3e$\x7bentries\x5b0\x5d.name\x7d (+$\x7bentries\x5b0\x5d.gain.toFixed(1)\x7dg) 🌟\x3c\\\/span\x3e\\n                \x3c\\\/div\x3e`;\\n            \x7d\\n        \x7d);\\n        document.getElementById(\x27weekly-gainers\x27).innerHTML \x3d html || \x27\x3cspan style\x3d\\\x22color:#aaa;\\\x22\x3eMore weight logs needed to render metrics.\x3c\\\/span\x3e\x27;\\n\\n        const growthDiv \x3d document.getElementById(\x27total-growth\x27);\\n        growthDiv.innerHTML \x3d \x27\x27;\\n        kittens.forEach(k \x3d\x3e \x7b\\n            let data \x3d weights.filter(w \x3d\x3e w.kittenId \x3d\x3d\x3d k.id).sort((a,b) \x3d\x3e new Date(a.date) - new Date(b.date));\\n            if(data.length \x3e\x3d 2) \x7b\\n                let pct \x3d (((data\x5bdata.length-1\x5d.weight - data\x5b0\x5d.weight) \/ data\x5b0\x5d.weight) * 100).toFixed(1);\\n                growthDiv.innerHTML +\x3d `\x3cdiv class\x3d\\\x22stat-row\\\x22\x3e\x3cspan\x3e$\x7bk.name\x7d\x3c\\\/span\x3e \x3cspan\x3e+$\x7bpct\x7d%\x3c\\\/span\x3e\x3c\\\/div\x3e`;\\n            \x7d else \x7b\\n                growthDiv.innerHTML +\x3d `\x3cdiv class\x3d\\\x22stat-row\\\x22\x3e\x3cspan\x3e$\x7bk.name\x7d\x3c\\\/span\x3e \x3cspan style\x3d\\\x22color:#aaa;\\\x22\x3eInsufficient records\x3c\\\/span\x3e\x3c\\\/div\x3e`;\\n            \x7d\\n        \x7d);\\n    \x7d\\n\\n    function renderGrowthChart() \x7b\\n        const ctx \x3d document.getElementById(\x27growthChart\x27).getContext(\x272d\x27);\\n        if(!weights || weights.length \x3d\x3d\x3d 0) \x7b\\n            if(myChart) myChart.destroy();\\n            ctx.clearRect(0, 0, 400, 250);\\n            ctx.font \x3d \\\x2213px Quicksand\\\x22;\\n            ctx.fillStyle \x3d \\\x22#aaa\\\x22;\\n            ctx.textAlign \x3d \\\x22center\\\x22;\\n            ctx.fillText(\\\x22Log weight points to display graph data\\\x22, 200, 125);\\n            return;\\n        \x7d\\n        let allDates \x3d \x5b...new Set(weights.map(w \x3d\x3e w.date))\x5d.sort((a,b) \x3d\x3e new Date(a) - new Date(b));\\n        \\n        let datasets \x3d kittens.map(k \x3d\x3e \x7b\\n            let dataPoints \x3d allDates.map(dStr \x3d\x3e \x7b\\n                let r \x3d weights.find(w \x3d\x3e w.kittenId \x3d\x3d\x3d k.id \x26\x26 w.date \x3d\x3d\x3d dStr);\\n                return r ? r.weight : null;\\n            \x7d);\\n            return \x7b label: k.name, data: dataPoints, borderColor: k.color, backgroundColor: k.color, tension: 0.3, spanGaps: true \x7d;\\n        \x7d);\\n\\n        if (myChart) myChart.destroy();\\n        myChart \x3d new Chart(ctx, \x7b\\n            type: \x27line\x27,\\n            data: \x7b labels: allDates, datasets: datasets \x7d,\\n            options: \x7b responsive: true, maintainAspectRatio: false, plugins: \x7b legend: \x7b position: \x27bottom\x27, labels: \x7b boxWidth: 8, font: \x7b size: 10 \x7d \x7d \x7d \x7d \x7d\\n        \x7d);\\n    \x7d\\n\\n    function populateSettingsView() \x7b\\n        const list \x3d document.getElementById(\x27kitten-edit-list\x27);\\n        list.innerHTML \x3d \x27\x27;\\n        kittens.forEach(k \x3d\x3e \x7b\\n            let badge \x3d k.litter \x3d\x3d\x3d \x27Porchetta\x27 ? \x27badge-porchetta\x27 : \x27badge-sassy\x27;\\n            list.innerHTML +\x3d `\\n                \x3cdiv class\x3d\\\x22kitten-edit\\\x22\x3e\\n                    \x3cinput type\x3d\\\x22text\\\x22 id\x3d\\\x22edit-$\x7bk.id\x7d\\\x22 value\x3d\\\x22$\x7bk.name\x7d\\\x22\x3e\\n                    \x3cspan class\x3d\\\x22litter-badge $\x7bbadge\x7d\\\x22\x3e$\x7bk.litter\x7d\x27s\x3c\\\/span\x3e\\n                \x3c\\\/div\x3e\\n            `;\\n        \x7d);\\n    \x7d\\n\\n    function updateKittenNamesBackend() \x7b\\n        let mapping \x3d \x7b\x7d;\\n        kittens.forEach(k \x3d\x3e \x7b\\n            let val \x3d document.getElementById(`edit-$\x7bk.id\x7d`).value;\\n            if(val.trim() !\x3d\x3d \\\x22\\\x22) \x7b k.name \x3d val; mapping\x5bk.id\x5d \x3d val; \x7d\\n        \x7d);\\n        \\n        if (typeof google !\x3d\x3d \x27undefined\x27) \x7b\\n            google.script.run.withSuccessHandler(function() \x7b\\n                buildCollarButtons();\\n                updateMetadataLabels();\\n                showActionMessage(\x27settings-msg\x27);\\n            \x7d).saveKittenNamesMapping(mapping);\\n        \x7d else \x7b\\n            buildCollarButtons();\\n            showActionMessage(\x27settings-msg\x27);\\n        \x7d\\n    \x7d\\n\\n    function showActionMessage(id) \x7b\\n        const msg \x3d document.getElementById(id);\\n        msg.style.display \x3d \x27block\x27;\\n        setTimeout(() \x3d\x3e msg.style.display \x3d \x27none\x27, 3000);\\n    \x7d\\n\x3c\\\/script\x3e\\n\x3c\\\/body\x3e\\n\x3c\\\/html\x3e\x22,\x22ncc\x22:\x22\x7b\\\x22awhs\\\x22:true\x7d\x22\x7d", "AMg5ARfqYKg83ib8__eD5CuEgXbR:1781508921360", undefined, true , false  , "true", "https:\/\/n-2qldt2f5632dlretvxmijqt2eiv37v3g56mhkjq-0lu-script.googleusercontent.com", "https:\/\/drive.google.com\/abuse?id\x3dAKkXjoxq_Ei6jRgEin7AUhBa0P1zvLGHPlq9NDHfplNBV55t1iplOhvIjmnX1U5NyVJx4X_8O9KSFQd_aDLgAEyP5KF5k5kG_oMcAOxY%3A0\x26docurl\x3dhttps%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbyWrjViU0lrLvXyYGUbvkOAlK8rdJ3879BYdRpupEP-wbm7HnSol_ti7V4r_zYW-bcv%2Fexec");}
-el.src = 'https:\/\/n-2qldt2f5632dlretvxmijqt2eiv37v3g56mhkjq-0lu-script.googleusercontent.com\/userCodeAppPanel';
-}());
+
+<div class="app-container">
+    <div class="header">🐾 Kitten Tracker</div>
+    
+    <div class="nav">
+        <button class="active" onclick="switchTab('dashboard')">Home</button>
+        <button onclick="switchTab('weighin')">Weigh In</button>
+        <button onclick="switchTab('history')">History & Chart</button>
+        <button onclick="switchTab('insights')">Insights</button>
+        <button onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <div class="content">
+        <div id="dashboard" class="section active">
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Health Reminders 🍼</h3>
+            <div id="reminders-container"></div>
+            
+            <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--secondary);">Top Gainers This Week</h3>
+            <div class="insight-card">
+                <div id="weekly-gainers-dash"></div>
+            </div>
+        </div>
+
+        <div id="weighin" class="section">
+            <h3 style="margin-bottom: 20px; color: var(--primary);">New Weigh-In ⚖️</h3>
+            <div class="form-group">
+                <label>Select Kitten</label>
+                <select id="kitten-select"></select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="weigh-date">
+            </div>
+            <div class="form-group">
+                <label>Weight (g)</label>
+                <input type="number" id="weight-input" placeholder="e.g., 150">
+            </div>
+            <button class="btn-submit" onclick="saveWeight()">Save Weight</button>
+            <div id="save-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Saved successfully!</div>
+        </div>
+
+        <div id="history" class="section">
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Growth Chart 📈</h3>
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+            </div>
+            
+            <h3 style="margin-bottom: 10px; color: var(--secondary);">Weigh-In Log</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Kitten</th>
+                        <th>Weight (g)</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="insights" class="section">
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Growth Insights 📊</h3>
+            <div class="insight-card">
+                <div class="insight-title">Total Growth % (Since Day 1)</div>
+                <div id="total-growth"></div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">🏆 Top Gainers by Week</div>
+                <div id="weekly-gainers"></div>
+            </div>
+        </div>
+
+        <div id="settings" class="section">
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Manage Kittens 🐱</h3>
+            <p style="font-size: 0.85em; margin-bottom: 15px; color: gray;">Update names as their personalities develop!</p>
+            <div id="kitten-edit-list"></div>
+            <button class="btn-submit" style="margin-top: 15px;" onclick="saveKittenNames()">Save Names</button>
+            <div id="settings-msg" style="color: mediumseagreen; margin-top: 10px; text-align: center; display: none;">Names updated!</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Initialization with Pre-loaded Spreadsheet Data ---
+    const defaultKittens = [
+        { id: 'p_gray', name: 'Gray Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#808080' },
+        { id: 'p_red', name: 'Red Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ff4d4d' },
+        { id: 'p_violet', name: 'Violet Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#da70d6' },
+        { id: 'p_pink', name: 'Pink Collar', litter: 'Porchetta', dob: '2026-05-25', color: '#ffb6c1' },
+        { id: 's_black', name: 'Black Collar', litter: 'Sassy', dob: '2026-06-01', color: '#333333' },
+        { id: 's_white', name: 'White Collar', litter: 'Sassy', dob: '2026-06-01', color: '#d3d3d3' }
+    ];
+
+    // Pre-load data from your spreadsheet image
+    const preloadedWeights = [
+        // May 25
+        { kittenId: 'p_gray', date: '2026-05-25', weight: 100, id: 1 },
+        { kittenId: 'p_red', date: '2026-05-25', weight: 87, id: 2 },
+        { kittenId: 'p_violet', date: '2026-05-25', weight: 98, id: 3 },
+        { kittenId: 'p_pink', date: '2026-05-25', weight: 74, id: 4 },
+        // May 26
+        { kittenId: 'p_gray', date: '2026-05-26', weight: 114, id: 5 },
+        { kittenId: 'p_red', date: '2026-05-26', weight: 94, id: 6 },
+        { kittenId: 'p_violet', date: '2026-05-26', weight: 108, id: 7 },
+        { kittenId: 'p_pink', date: '2026-05-26', weight: 84, id: 8 },
+        // May 28
+        { kittenId: 'p_gray', date: '2026-05-28', weight: 128, id: 9 },
+        { kittenId: 'p_red', date: '2026-05-28', weight: 111, id: 10 },
+        { kittenId: 'p_violet', date: '2026-05-28', weight: 121, id: 11 },
+        { kittenId: 'p_pink', date: '2026-05-28', weight: 97, id: 12 },
+        // May 30
+        { kittenId: 'p_gray', date: '2026-05-30', weight: 137, id: 13 },
+        { kittenId: 'p_red', date: '2026-05-30', weight: 123, id: 14 },
+        { kittenId: 'p_violet', date: '2026-05-30', weight: 135, id: 15 },
+        { kittenId: 'p_pink', date: '2026-05-30', weight: 113, id: 16 },
+        // June 1
+        { kittenId: 's_black', date: '2026-06-01', weight: 93, id: 17 },
+        { kittenId: 's_white', date: '2026-06-01', weight: 84, id: 18 },
+        { kittenId: 'p_gray', date: '2026-06-01', weight: 158, id: 19 },
+        { kittenId: 'p_red', date: '2026-06-01', weight: 138, id: 20 },
+        { kittenId: 'p_violet', date: '2026-06-01', weight: 143, id: 21 },
+        { kittenId: 'p_pink', date: '2026-06-01', weight: 123, id: 22 },
+        // June 4
+        { kittenId: 'p_gray', date: '2026-06-04', weight: 172, id: 23 },
+        { kittenId: 'p_red', date: '2026-06-04', weight: 157, id: 24 },
+        { kittenId: 'p_violet', date: '2026-06-04', weight: 154, id: 25 },
+        { kittenId: 'p_pink', date: '2026-06-04', weight: 137, id: 26 },
+        { kittenId: 's_black', date: '2026-06-04', weight: 128, id: 27 },
+        { kittenId: 's_white', date: '2026-06-04', weight: 121, id: 28 }
+    ];
+
+    let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || defaultKittens;
+    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || preloadedWeights;
+    let myChart = null; // Holds the Chart.js instance
+
+    document.getElementById('weigh-date').valueAsDate = new Date();
+
+    // --- Core Functions ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+
+        if(tabId === 'dashboard') loadDashboard();
+        if(tabId === 'insights') loadInsights();
+        if(tabId === 'history') {
+            loadHistoryTable();
+            renderChart();
+        }
+    }
+
+    function init() {
+        populateDropdown();
+        populateSettings();
+        loadDashboard();
+    }
+
+    function populateDropdown() {
+        const select = document.getElementById('kitten-select');
+        select.innerHTML = '';
+        kittens.forEach(k => {
+            let opt = document.createElement('option');
+            opt.value = k.id;
+            opt.textContent = `${k.name} (${k.litter}'s)`;
+            select.appendChild(opt);
+        });
+    }
+
+    function saveWeight() {
+        const kId = document.getElementById('kitten-select').value;
+        const date = document.getElementById('weigh-date').value;
+        const weight = parseFloat(document.getElementById('weight-input').value);
+
+        if(!date || isNaN(weight)) {
+            alert('Please enter a valid date and weight.');
+            return;
+        }
+
+        weights.push({ kittenId: kId, date: date, weight: weight, id: Date.now() });
+        localStorage.setItem('kt_weights_v3', JSON.stringify(weights));
+
+        document.getElementById('weight-input').value = '';
+        
+        const msg = document.getElementById('save-msg');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+        
+        // Refresh data if tabs are active
+        loadDashboard();
+        loadInsights();
+    }
+
+    // --- History & Chart ---
+    function loadHistoryTable() {
+        const tbody = document.getElementById('history-table-body');
+        tbody.innerHTML = '';
+        
+        // Sort newest first
+        const sorted = [...weights].sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+        
+        sorted.forEach(w => {
+            let k = kittens.find(kt => kt.id === w.kittenId);
+            let kName = k ? k.name : 'Unknown';
+            let dateStr = new Date(w.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td><strong>${kName}</strong></td>
+                    <td>${w.weight}g</td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        
+        // Extract unique dates sorted
+        let allDates = [...new Set(weights.map(w => w.date))].sort((a,b) => new Date(a) - new Date(b));
+        let displayDates = allDates.map(d => new Date(d).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}));
+
+        // Prepare datasets per kitten
+        let datasets = kittens.map(k => {
+            // Find weights matching the unique dates
+            let dataPoints = allDates.map(dateStr => {
+                let record = weights.find(w => w.kittenId === k.id && w.date === dateStr);
+                return record ? record.weight : null; 
+            });
+
+            return {
+                label: k.name,
+                data: dataPoints,
+                borderColor: k.color,
+                backgroundColor: k.color,
+                tension: 0.3,
+                spanGaps: true // Connects lines even if a day is skipped
+            };
+        });
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: displayDates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                },
+                scales: {
+                    y: { title: { display: true, text: 'Weight (g)' } }
+                }
+            }
+        });
+    }
+
+    // --- Dashboard & Insights ---
+    function loadDashboard() {
+        const remindersDiv = document.getElementById('reminders-container');
+        remindersDiv.innerHTML = '';
+        
+        const litters = [
+            { name: "Porchetta's", dob: "2026-05-25" },
+            { name: "Sassy's", dob: "2026-06-01" }
+        ];
+
+        litters.forEach(litter => {
+            let dob = new Date(litter.dob);
+            let dewormDate = new Date(dob);
+            dewormDate.setDate(dewormDate.getDate() + 14);
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            dewormDate.setHours(0,0,0,0);
+
+            const timeDiff = dewormDate.getTime() - today.getTime();
+            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+            let statusStr = "";
+            if(daysLeft > 0) statusStr = `in ${daysLeft} days`;
+            else if (daysLeft === 0) statusStr = `TODAY!`;
+            else statusStr = `${Math.abs(daysLeft)} days ago`;
+
+            remindersDiv.innerHTML += `
+                <div class="reminder-card">
+                    <strong>🐛 Deworming: ${litter.name} Kittens</strong>
+                    Day 14 is on ${dewormDate.toDateString()} (${statusStr}).
+                </div>
+            `;
+        });
+        
+        loadInsights(true); // Loads top gainer into dashboard
+    }
+
+    function loadInsights(dashOnly = false) {
+        let weeklyGains = {}; 
+        let kittenData = {};
+        
+        kittens.forEach(k => {
+            kittenData[k.id] = weights.filter(w => w.kittenId === k.id).sort((a,b) => new Date(a.date) - new Date(b.date));
+        });
+
+        // 1. Calculate Highest Gainer by Week
+        kittens.forEach(k => {
+            let data = kittenData[k.id];
+            if(data.length < 2) return;
+            
+            let dob = new Date(k.dob);
+            let weekBins = {};
+            
+            data.forEach(w => {
+                let daysOld = Math.floor((new Date(w.date) - dob) / (1000 * 3600 * 24));
+                let weekNum = Math.floor(daysOld / 7) + 1;
+                if(!weekBins[weekNum]) weekBins[weekNum] = [];
+                weekBins[weekNum].push(w.weight);
+            });
+
+            for(let week in weekBins) {
+                if(weekBins[week].length >= 1) {
+                    if(!weeklyGains[week]) weeklyGains[week] = [];
+                    let min = Math.min(...weekBins[week]);
+                    let max = Math.max(...weekBins[week]);
+                    
+                    let gain = max - min; 
+                    if(weekBins[week].length === 1) {
+                        let prevWeights = data.filter(w => Math.floor((new Date(w.date) - dob)/(1000*3600*24))/7 + 1 < week);
+                        if(prevWeights.length > 0) {
+                            gain = max - prevWeights[prevWeights.length-1].weight;
+                        } else {
+                            gain = 0; 
+                        }
+                    }
+                    if(gain > 0) {
+                        weeklyGains[week].push({ id: k.id, name: k.name, gain: gain });
+                    }
+                }
+            }
+        });
+
+        // Render Top Gainers (Dashboard & Insights)
+        let weeksArr = Object.keys(weeklyGains).sort((a,b) => b - a); // Newest week first
+        let gainersHTML = '';
+        
+        if(weeksArr.length === 0) {
+            gainersHTML = '<p style="font-size:0.9em;">No weekly gains recorded yet.</p>';
+        } else {
+            weeksArr.forEach(week => {
+                let stats = weeklyGains[week];
+                if(stats.length > 0) {
+                    stats.sort((a,b) => b.gain - a.gain);
+                    let winner = stats[0];
+                    gainersHTML += `<div class="stat-row" style="background:#fff; padding:10px; border-radius:8px; margin-bottom:8px;">
+                        <span><strong>Week ${week}</strong></span> 
+                        <span>${winner.name} (+${winner.gain.toFixed(1)}g) 🌟</span>
+                    </div>`;
+                }
+            });
+        }
+
+        if(dashOnly) {
+            // Only show the most recent week's winner on the dash
+            const dashDiv = document.getElementById('weekly-gainers-dash');
+            if(weeksArr.length > 0 && weeklyGains[weeksArr[0]].length > 0) {
+                let topWeek = weeksArr[0];
+                let winner = weeklyGains[topWeek].sort((a,b) => b.gain - a.gain)[0];
+                dashDiv.innerHTML = `<div class="stat-row" style="margin:0;">
+                    <span><strong>Week ${topWeek}</strong></span> 
+                    <span>${winner.name} (+${winner.gain.toFixed(1)}g) 🌟</span>
+                </div>`;
+            } else {
+                dashDiv.innerHTML = '<p style="font-size:0.9em; margin:0;">Need more data!</p>';
+            }
+            return;
+        }
+
+        document.getElementById('weekly-gainers').innerHTML = gainersHTML;
+
+        // 2. Total Growth %
+        const growthDiv = document.getElementById('total-growth');
+        growthDiv.innerHTML = '';
+        kittens.forEach(k => {
+            let data = kittenData[k.id];
+            if(data.length >= 2) {
+                let first = data[0].weight;
+                let last = data[data.length-1].weight;
+                let pct = (((last - first) / first) * 100).toFixed(1);
+                growthDiv.innerHTML += `<div class="stat-row"><span>${k.name}</span> <span>+${pct}%</span></div>`;
+            } else {
+                growthDiv.innerHTML += `<div class="stat-row"><span>${k.name}</span> <span style="color:#aaa;">Need data</span></div>`;
+            }
+        });
+    }
+
+    function populateSettings() {
+        const list = document.getElementById('kitten-edit-list');
+        list.innerHTML = '';
+        kittens.forEach(k => {
+            let badgeClass = k.litter === 'Porchetta' ? 'badge-porchetta' : 'badge-sassy';
+            list.innerHTML += `
+                <div class="kitten-edit">
+                    <input type="text" id="edit-${k.id}" value="${k.name}">
+                    <span class="litter-badge ${badgeClass}">${k.litter}'s</span>
+                </div>
+            `;
+        });
+    }
+
+    function saveKittenNames() {
+        kittens.forEach(k => {
+            let newVal = document.getElementById(`edit-${k.id}`).value;
+            if(newVal.trim() !== '') {
+                k.name = newVal;
+            }
+        });
+        localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
+        populateDropdown(); 
+        
+        const msg = document.getElementById('settings-msg');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+        
+        loadHistoryTable();
+        renderChart();
+    }
+
+    // Run startup
+    init();
+
 </script>
 </body>
 </html>
