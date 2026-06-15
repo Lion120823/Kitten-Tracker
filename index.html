@@ -79,9 +79,32 @@
 <script>
     let kittens = JSON.parse(localStorage.getItem('kt_kittens_v3')) || [
         { id: 'p_gray', name: 'Gray Collar', mother: 'Porchetta', dob: '2026-05-25' },
-        { id: 's_black', name: 'Black Collar', mother: 'Sassy', dob: '2026-06-01' }
+        { id: 'p_red', name: 'Red Collar', mother: 'Porchetta', dob: '2026-05-25' },
+        { id: 'p_violet', name: 'Violet Collar', mother: 'Porchetta', dob: '2026-05-25' },
+        { id: 'p_pink', name: 'Pink Collar', mother: 'Porchetta', dob: '2026-05-25' },
+        { id: 's_black', name: 'Black Collar', mother: 'Sassy', dob: '2026-06-01' },
+        { id: 's_white', name: 'White Collar', mother: 'Sassy', dob: '2026-06-01' }
     ];
-    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || [];
+
+    const initialWeights = [
+        { kittenId: 'p_gray', date: '2026-05-25', weight: 100 }, { kittenId: 'p_red', date: '2026-05-25', weight: 87 },
+        { kittenId: 'p_violet', date: '2026-05-25', weight: 98 }, { kittenId: 'p_pink', date: '2026-05-25', weight: 74 },
+        { kittenId: 'p_gray', date: '2026-05-26', weight: 114 }, { kittenId: 'p_red', date: '2026-05-26', weight: 94 },
+        { kittenId: 'p_violet', date: '2026-05-26', weight: 108 }, { kittenId: 'p_pink', date: '2026-05-26', weight: 84 },
+        { kittenId: 'p_gray', date: '2026-05-28', weight: 128 }, { kittenId: 'p_red', date: '2026-05-28', weight: 111 },
+        { kittenId: 'p_violet', date: '2026-05-28', weight: 121 }, { kittenId: 'p_pink', date: '2026-05-28', weight: 97 },
+        { kittenId: 'p_gray', date: '2026-05-30', weight: 137 }, { kittenId: 'p_red', date: '2026-05-30', weight: 123 },
+        { kittenId: 'p_violet', date: '2026-05-30', weight: 135 }, { kittenId: 'p_pink', date: '2026-05-30', weight: 113 },
+        { kittenId: 's_black', date: '2026-06-01', weight: 93 }, { kittenId: 's_white', date: '2026-06-01', weight: 84 },
+        { kittenId: 'p_gray', date: '2026-06-01', weight: 158 }, { kittenId: 'p_red', date: '2026-06-01', weight: 138 },
+        { kittenId: 'p_violet', date: '2026-06-01', weight: 143 }, { kittenId: 'p_pink', date: '2026-06-01', weight: 123 },
+        { kittenId: 'p_gray', date: '2026-06-04', weight: 172 }, { kittenId: 'p_red', date: '2026-06-04', weight: 157 },
+        { kittenId: 'p_violet', date: '2026-06-04', weight: 154 }, { kittenId: 'p_pink', date: '2026-06-04', weight: 137 },
+        { kittenId: 's_black', date: '2026-06-04', weight: 128 }, { kittenId: 's_white', date: '2026-06-04', weight: 121 }
+    ];
+
+    let weights = JSON.parse(localStorage.getItem('kt_weights_v3')) || initialWeights;
+    let myChart = null;
 
     function switchTab(tabId, btn) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -127,11 +150,10 @@
         weights.push({ kittenId: kId, date, weight, id: Date.now() });
         localStorage.setItem('kt_weights_v3', JSON.stringify(weights));
         
-        // Google Sheets Sync
         const CLOUD_URL = "https://script.google.com/macros/s/AKfycbyfzrJe2swPRpwEpgLn2B7zYLuZR4INZE2QGIqERMXhr-Ao8vGQpiMA5h0vRuBvtV2C/exec";
         fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({date, kitten: kId, weight, type: 'weight'}) });
-        
         alert('Saved!');
+        loadHistoryTable();
     }
 
     function loadDashboard() {
@@ -156,38 +178,4 @@
                         <div class="reminder-card">
                             <strong>🐛 Deworming: ${w} Weeks Old</strong>
                             <p style="margin-bottom:5px;">For: ${names}</p>
-                            Due: ${d.toDateString()} (${diff < 0 ? 'OVERDUE' : diff === 0 ? 'TODAY!' : 'in ' + diff + ' days'})
-                        </div>
-                    `;
-                }
-            });
-        });
-    }
-
-    function renderChart() {
-        const ctx = document.getElementById('growthChart').getContext('2d');
-        // ... (Chart.js logic remains same)
-    }
-
-    function saveKittenNames() {
-        kittens.forEach(k => {
-            k.name = document.getElementById(`edit-name-${k.id}`).value;
-            k.mother = document.getElementById(`edit-mother-${k.id}`).value;
-            k.dob = document.getElementById(`edit-dob-${k.id}`).value;
-        });
-        localStorage.setItem('kt_kittens_v3', JSON.stringify(kittens));
-        populateDropdown();
-        alert("Changes saved!");
-    }
-
-    function resetAppData() {
-        if(confirm("Delete all data?")) { localStorage.clear(); location.reload(); }
-    }
-
-    document.getElementById('weigh-date').valueAsDate = new Date();
-    populateDropdown();
-    populateSettings();
-    loadDashboard();
-</script>
-</body>
-</html>
+                            Due: ${d.toDateString()}
